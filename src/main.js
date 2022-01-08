@@ -22,7 +22,14 @@ window.onload = function() {
       this.seed = generateRandomSeed();
       renderTextures();
     };
+    this.randomColor = function() {
+      this.backgroundColor = [Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32];
+      this.nebulaColorBegin = [Math.random()*255,Math.random()*255,Math.random()*255];
+      this.nebulaColorEnd = [Math.random()*255,Math.random()*255,Math.random()*255];
+      renderTextures();
+    };
     this.fov = parseInt(params.fov) || 80;
+    this.backgroundColor = params.backgroundColor === undefined ? [Math.random()*10,Math.random()*10,Math.random()*10] : params.backgroundColor;
     this.pointStars =
       params.pointStars === undefined ? true : params.pointStars === "true";
     this.stars = params.stars === undefined ? true : params.stars === "true";
@@ -31,8 +38,8 @@ window.onload = function() {
     this.jpegQuality = params.jpegQuality === undefined ? 0.85 : parseFloat(params.jpegQuality);
     this.nebulae = params.nebulae === undefined ? true : params.nebulae === "true";
     this.nebulaOpacity = params.nebulaOpacity === undefined ? 33 : parseInt(params.nebulaOpacity);
-    this.nebulaColorBegin = params.nebulaColorBegin === undefined ? '#ff0000' : params.nebulaColorBegin;
-    this.nebulaColorEnd = params.nebulaColorEnd === undefined ? '#800000' : params.nebulaColorEnd;
+    this.nebulaColorBegin = params.nebulaColorBegin === undefined ? [Math.random()*255, Math.random()*255, Math.random()*255] : params.nebulaColorBegin;
+    this.nebulaColorEnd = params.nebulaColorEnd === undefined ? [Math.random()*255, Math.random()*255, Math.random()*255] : params.nebulaColorEnd;
     this.noiseScale = params.nebulaOpacity === undefined ? 5 : parseFloat(params.noiseScale);
     this.nebulaBrightness = params.nebulaBrightness === undefined ? 18 : parseInt(params.nebulaBrightness);
     this.resolution = parseInt(params.resolution) || 1024;
@@ -109,7 +116,13 @@ window.onload = function() {
     .listen()
     .onFinishChange(renderTextures);
   gui.add(menu, "randomSeed").name("Randomize seed");
+  gui.add(menu, "randomColor").name("Randomize colors");
   gui.add(menu, "fov", 10, 150, 1).name("Field of view °");
+  gui
+    .addColor(menu, 'backgroundColor')
+    .listen()
+    .name("Background color")
+    .onChange(renderTextures);
   gui
     .add(menu, "pointStars")
     .name("Point stars")
@@ -132,10 +145,12 @@ window.onload = function() {
     .onChange(renderTextures);
   gui
     .addColor(menu, 'nebulaColorBegin')
+    .listen()
     .name("Nebula Color Begin")
     .onChange(renderTextures);
   gui
     .addColor(menu, 'nebulaColorEnd')
+    .listen()
     .name("Nebula Color End")
     .onChange(renderTextures);
   gui
@@ -185,6 +200,7 @@ window.onload = function() {
     const queryString = qs.stringify({
       seed: menu.seed,
       fov: menu.fov,
+      backgroundColor: menu.backgroundColor,
       pointStars: menu.pointStars,
       stars: menu.stars,
       sun: menu.sun,
@@ -221,6 +237,7 @@ window.onload = function() {
   function renderTextures() {
     var textures = space.render({
       seed: menu.seed,
+      backgroundColor: menu.backgroundColor,
       pointStars: menu.pointStars,
       stars: menu.stars,
       sun: menu.sun,

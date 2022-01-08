@@ -115,8 +115,8 @@ module.exports = function() {
     //var rand = new rng.MT(hashcode(params.seed) + Math.floor(new Date().getTime() % 9999));
     var rand = new rng.MT(hashcode(params.seed) + 2000);
     var nebulaParams = [];
-    var beginColor = hexToRgb(params.nebulaColorBegin);
-    var endColor = hexToRgb(params.nebulaColorEnd);
+    var beginColor = params.nebulaColorBegin;
+    var endColor = params.nebulaColorEnd;
     var countNebulas = Math.floor(2 + rand.random() * 3); // 2 - 4 nebulas
     if (params.nebulae) {
         for(var ni=0; ni<countNebulas; ni++) {
@@ -189,7 +189,8 @@ module.exports = function() {
     var keys = Object.keys(dirs);
     for (var i = 0; i < keys.length; i++) {
       // Clear the context.
-      self.gl.clearColor(0, 0, 0, 1);
+      var backgroundColor = params.backgroundColor;
+      self.gl.clearColor(backgroundColor[0]/255.0, backgroundColor[1]/255.0, backgroundColor[2]/255.0, 1.0);
       self.gl.clear(self.gl.COLOR_BUFFER_BIT);
 
       // Look in the direction for this texture.
@@ -479,22 +480,4 @@ function shuffle(array) {
   }
 
   return array;
-}
-
-function componentToHex(c) {
-  var hex = c.toString(16);
-  return hex.length == 1 ? "0" + hex : hex;
-}
-
-function rgbToHex(r, g, b) {
-  return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-}
-
-function hexToRgb(hex) {
-  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? [
-    parseInt(result[1], 16),
-    parseInt(result[2], 16),
-    parseInt(result[3], 16)
-  ] : [1, 1, 1];
 }
