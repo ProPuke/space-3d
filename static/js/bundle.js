@@ -11453,6 +11453,489 @@ process.chdir = function (dir) {
 };
 
 },{}],28:[function(require,module,exports){
+module.exports = `
+//
+// GLSL textureless classic 4D noise "cnoise",
+// with an RSL-style periodic variant "pnoise".
+// Author:  Stefan Gustavson (stefan.gustavson@liu.se)
+// Version: 2011-08-22
+//
+// Many thanks to Ian McEwan of Ashima Arts for the
+// ideas for permutation and gradient selection.
+//
+// Copyright (c) 2011 Stefan Gustavson. All rights reserved.
+// Distributed under the MIT license. See LICENSE file.
+// https://github.com/ashima/webgl-noise
+//
+
+vec4 mod289(vec4 x)
+{
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec4 permute(vec4 x)
+{
+  return mod289(((x*34.0)+1.0)*x);
+}
+
+vec4 taylorInvSqrt(vec4 r)
+{
+  return 1.79284291400159 - 0.85373472095314 * r;
+}
+
+vec4 fade(vec4 t) {
+  return t*t*t*(t*(t*6.0-15.0)+10.0);
+}
+
+// Classic Perlin noise
+float cnoise(vec4 P)
+{
+  vec4 Pi0 = floor(P); // Integer part for indexing
+  vec4 Pi1 = Pi0 + 1.0; // Integer part + 1
+  Pi0 = mod289(Pi0);
+  Pi1 = mod289(Pi1);
+  vec4 Pf0 = fract(P); // Fractional part for interpolation
+  vec4 Pf1 = Pf0 - 1.0; // Fractional part - 1.0
+  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+  vec4 iy = vec4(Pi0.yy, Pi1.yy);
+  vec4 iz0 = vec4(Pi0.zzzz);
+  vec4 iz1 = vec4(Pi1.zzzz);
+  vec4 iw0 = vec4(Pi0.wwww);
+  vec4 iw1 = vec4(Pi1.wwww);
+
+  vec4 ixy = permute(permute(ix) + iy);
+  vec4 ixy0 = permute(ixy + iz0);
+  vec4 ixy1 = permute(ixy + iz1);
+  vec4 ixy00 = permute(ixy0 + iw0);
+  vec4 ixy01 = permute(ixy0 + iw1);
+  vec4 ixy10 = permute(ixy1 + iw0);
+  vec4 ixy11 = permute(ixy1 + iw1);
+
+  vec4 gx00 = ixy00 * (1.0 / 7.0);
+  vec4 gy00 = floor(gx00) * (1.0 / 7.0);
+  vec4 gz00 = floor(gy00) * (1.0 / 6.0);
+  gx00 = fract(gx00) - 0.5;
+  gy00 = fract(gy00) - 0.5;
+  gz00 = fract(gz00) - 0.5;
+  vec4 gw00 = vec4(0.75) - abs(gx00) - abs(gy00) - abs(gz00);
+  vec4 sw00 = step(gw00, vec4(0.0));
+  gx00 -= sw00 * (step(0.0, gx00) - 0.5);
+  gy00 -= sw00 * (step(0.0, gy00) - 0.5);
+
+  vec4 gx01 = ixy01 * (1.0 / 7.0);
+  vec4 gy01 = floor(gx01) * (1.0 / 7.0);
+  vec4 gz01 = floor(gy01) * (1.0 / 6.0);
+  gx01 = fract(gx01) - 0.5;
+  gy01 = fract(gy01) - 0.5;
+  gz01 = fract(gz01) - 0.5;
+  vec4 gw01 = vec4(0.75) - abs(gx01) - abs(gy01) - abs(gz01);
+  vec4 sw01 = step(gw01, vec4(0.0));
+  gx01 -= sw01 * (step(0.0, gx01) - 0.5);
+  gy01 -= sw01 * (step(0.0, gy01) - 0.5);
+
+  vec4 gx10 = ixy10 * (1.0 / 7.0);
+  vec4 gy10 = floor(gx10) * (1.0 / 7.0);
+  vec4 gz10 = floor(gy10) * (1.0 / 6.0);
+  gx10 = fract(gx10) - 0.5;
+  gy10 = fract(gy10) - 0.5;
+  gz10 = fract(gz10) - 0.5;
+  vec4 gw10 = vec4(0.75) - abs(gx10) - abs(gy10) - abs(gz10);
+  vec4 sw10 = step(gw10, vec4(0.0));
+  gx10 -= sw10 * (step(0.0, gx10) - 0.5);
+  gy10 -= sw10 * (step(0.0, gy10) - 0.5);
+
+  vec4 gx11 = ixy11 * (1.0 / 7.0);
+  vec4 gy11 = floor(gx11) * (1.0 / 7.0);
+  vec4 gz11 = floor(gy11) * (1.0 / 6.0);
+  gx11 = fract(gx11) - 0.5;
+  gy11 = fract(gy11) - 0.5;
+  gz11 = fract(gz11) - 0.5;
+  vec4 gw11 = vec4(0.75) - abs(gx11) - abs(gy11) - abs(gz11);
+  vec4 sw11 = step(gw11, vec4(0.0));
+  gx11 -= sw11 * (step(0.0, gx11) - 0.5);
+  gy11 -= sw11 * (step(0.0, gy11) - 0.5);
+
+  vec4 g0000 = vec4(gx00.x,gy00.x,gz00.x,gw00.x);
+  vec4 g1000 = vec4(gx00.y,gy00.y,gz00.y,gw00.y);
+  vec4 g0100 = vec4(gx00.z,gy00.z,gz00.z,gw00.z);
+  vec4 g1100 = vec4(gx00.w,gy00.w,gz00.w,gw00.w);
+  vec4 g0010 = vec4(gx10.x,gy10.x,gz10.x,gw10.x);
+  vec4 g1010 = vec4(gx10.y,gy10.y,gz10.y,gw10.y);
+  vec4 g0110 = vec4(gx10.z,gy10.z,gz10.z,gw10.z);
+  vec4 g1110 = vec4(gx10.w,gy10.w,gz10.w,gw10.w);
+  vec4 g0001 = vec4(gx01.x,gy01.x,gz01.x,gw01.x);
+  vec4 g1001 = vec4(gx01.y,gy01.y,gz01.y,gw01.y);
+  vec4 g0101 = vec4(gx01.z,gy01.z,gz01.z,gw01.z);
+  vec4 g1101 = vec4(gx01.w,gy01.w,gz01.w,gw01.w);
+  vec4 g0011 = vec4(gx11.x,gy11.x,gz11.x,gw11.x);
+  vec4 g1011 = vec4(gx11.y,gy11.y,gz11.y,gw11.y);
+  vec4 g0111 = vec4(gx11.z,gy11.z,gz11.z,gw11.z);
+  vec4 g1111 = vec4(gx11.w,gy11.w,gz11.w,gw11.w);
+
+  vec4 norm00 = taylorInvSqrt(vec4(dot(g0000, g0000), dot(g0100, g0100), dot(g1000, g1000), dot(g1100, g1100)));
+  g0000 *= norm00.x;
+  g0100 *= norm00.y;
+  g1000 *= norm00.z;
+  g1100 *= norm00.w;
+
+  vec4 norm01 = taylorInvSqrt(vec4(dot(g0001, g0001), dot(g0101, g0101), dot(g1001, g1001), dot(g1101, g1101)));
+  g0001 *= norm01.x;
+  g0101 *= norm01.y;
+  g1001 *= norm01.z;
+  g1101 *= norm01.w;
+
+  vec4 norm10 = taylorInvSqrt(vec4(dot(g0010, g0010), dot(g0110, g0110), dot(g1010, g1010), dot(g1110, g1110)));
+  g0010 *= norm10.x;
+  g0110 *= norm10.y;
+  g1010 *= norm10.z;
+  g1110 *= norm10.w;
+
+  vec4 norm11 = taylorInvSqrt(vec4(dot(g0011, g0011), dot(g0111, g0111), dot(g1011, g1011), dot(g1111, g1111)));
+  g0011 *= norm11.x;
+  g0111 *= norm11.y;
+  g1011 *= norm11.z;
+  g1111 *= norm11.w;
+
+  float n0000 = dot(g0000, Pf0);
+  float n1000 = dot(g1000, vec4(Pf1.x, Pf0.yzw));
+  float n0100 = dot(g0100, vec4(Pf0.x, Pf1.y, Pf0.zw));
+  float n1100 = dot(g1100, vec4(Pf1.xy, Pf0.zw));
+  float n0010 = dot(g0010, vec4(Pf0.xy, Pf1.z, Pf0.w));
+  float n1010 = dot(g1010, vec4(Pf1.x, Pf0.y, Pf1.z, Pf0.w));
+  float n0110 = dot(g0110, vec4(Pf0.x, Pf1.yz, Pf0.w));
+  float n1110 = dot(g1110, vec4(Pf1.xyz, Pf0.w));
+  float n0001 = dot(g0001, vec4(Pf0.xyz, Pf1.w));
+  float n1001 = dot(g1001, vec4(Pf1.x, Pf0.yz, Pf1.w));
+  float n0101 = dot(g0101, vec4(Pf0.x, Pf1.y, Pf0.z, Pf1.w));
+  float n1101 = dot(g1101, vec4(Pf1.xy, Pf0.z, Pf1.w));
+  float n0011 = dot(g0011, vec4(Pf0.xy, Pf1.zw));
+  float n1011 = dot(g1011, vec4(Pf1.x, Pf0.y, Pf1.zw));
+  float n0111 = dot(g0111, vec4(Pf0.x, Pf1.yzw));
+  float n1111 = dot(g1111, Pf1);
+
+  vec4 fade_xyzw = fade(Pf0);
+  vec4 n_0w = mix(vec4(n0000, n1000, n0100, n1100), vec4(n0001, n1001, n0101, n1101), fade_xyzw.w);
+  vec4 n_1w = mix(vec4(n0010, n1010, n0110, n1110), vec4(n0011, n1011, n0111, n1111), fade_xyzw.w);
+  vec4 n_zw = mix(n_0w, n_1w, fade_xyzw.z);
+  vec2 n_yzw = mix(n_zw.xy, n_zw.zw, fade_xyzw.y);
+  float n_xyzw = mix(n_yzw.x, n_yzw.y, fade_xyzw.x);
+  return 2.2 * n_xyzw;
+}
+
+// Classic Perlin noise, periodic version
+float pnoise(vec4 P, vec4 rep)
+{
+  vec4 Pi0 = mod(floor(P), rep); // Integer part modulo rep
+  vec4 Pi1 = mod(Pi0 + 1.0, rep); // Integer part + 1 mod rep
+  Pi0 = mod289(Pi0);
+  Pi1 = mod289(Pi1);
+  vec4 Pf0 = fract(P); // Fractional part for interpolation
+  vec4 Pf1 = Pf0 - 1.0; // Fractional part - 1.0
+  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+  vec4 iy = vec4(Pi0.yy, Pi1.yy);
+  vec4 iz0 = vec4(Pi0.zzzz);
+  vec4 iz1 = vec4(Pi1.zzzz);
+  vec4 iw0 = vec4(Pi0.wwww);
+  vec4 iw1 = vec4(Pi1.wwww);
+
+  vec4 ixy = permute(permute(ix) + iy);
+  vec4 ixy0 = permute(ixy + iz0);
+  vec4 ixy1 = permute(ixy + iz1);
+  vec4 ixy00 = permute(ixy0 + iw0);
+  vec4 ixy01 = permute(ixy0 + iw1);
+  vec4 ixy10 = permute(ixy1 + iw0);
+  vec4 ixy11 = permute(ixy1 + iw1);
+
+  vec4 gx00 = ixy00 * (1.0 / 7.0);
+  vec4 gy00 = floor(gx00) * (1.0 / 7.0);
+  vec4 gz00 = floor(gy00) * (1.0 / 6.0);
+  gx00 = fract(gx00) - 0.5;
+  gy00 = fract(gy00) - 0.5;
+  gz00 = fract(gz00) - 0.5;
+  vec4 gw00 = vec4(0.75) - abs(gx00) - abs(gy00) - abs(gz00);
+  vec4 sw00 = step(gw00, vec4(0.0));
+  gx00 -= sw00 * (step(0.0, gx00) - 0.5);
+  gy00 -= sw00 * (step(0.0, gy00) - 0.5);
+
+  vec4 gx01 = ixy01 * (1.0 / 7.0);
+  vec4 gy01 = floor(gx01) * (1.0 / 7.0);
+  vec4 gz01 = floor(gy01) * (1.0 / 6.0);
+  gx01 = fract(gx01) - 0.5;
+  gy01 = fract(gy01) - 0.5;
+  gz01 = fract(gz01) - 0.5;
+  vec4 gw01 = vec4(0.75) - abs(gx01) - abs(gy01) - abs(gz01);
+  vec4 sw01 = step(gw01, vec4(0.0));
+  gx01 -= sw01 * (step(0.0, gx01) - 0.5);
+  gy01 -= sw01 * (step(0.0, gy01) - 0.5);
+
+  vec4 gx10 = ixy10 * (1.0 / 7.0);
+  vec4 gy10 = floor(gx10) * (1.0 / 7.0);
+  vec4 gz10 = floor(gy10) * (1.0 / 6.0);
+  gx10 = fract(gx10) - 0.5;
+  gy10 = fract(gy10) - 0.5;
+  gz10 = fract(gz10) - 0.5;
+  vec4 gw10 = vec4(0.75) - abs(gx10) - abs(gy10) - abs(gz10);
+  vec4 sw10 = step(gw10, vec4(0.0));
+  gx10 -= sw10 * (step(0.0, gx10) - 0.5);
+  gy10 -= sw10 * (step(0.0, gy10) - 0.5);
+
+  vec4 gx11 = ixy11 * (1.0 / 7.0);
+  vec4 gy11 = floor(gx11) * (1.0 / 7.0);
+  vec4 gz11 = floor(gy11) * (1.0 / 6.0);
+  gx11 = fract(gx11) - 0.5;
+  gy11 = fract(gy11) - 0.5;
+  gz11 = fract(gz11) - 0.5;
+  vec4 gw11 = vec4(0.75) - abs(gx11) - abs(gy11) - abs(gz11);
+  vec4 sw11 = step(gw11, vec4(0.0));
+  gx11 -= sw11 * (step(0.0, gx11) - 0.5);
+  gy11 -= sw11 * (step(0.0, gy11) - 0.5);
+
+  vec4 g0000 = vec4(gx00.x,gy00.x,gz00.x,gw00.x);
+  vec4 g1000 = vec4(gx00.y,gy00.y,gz00.y,gw00.y);
+  vec4 g0100 = vec4(gx00.z,gy00.z,gz00.z,gw00.z);
+  vec4 g1100 = vec4(gx00.w,gy00.w,gz00.w,gw00.w);
+  vec4 g0010 = vec4(gx10.x,gy10.x,gz10.x,gw10.x);
+  vec4 g1010 = vec4(gx10.y,gy10.y,gz10.y,gw10.y);
+  vec4 g0110 = vec4(gx10.z,gy10.z,gz10.z,gw10.z);
+  vec4 g1110 = vec4(gx10.w,gy10.w,gz10.w,gw10.w);
+  vec4 g0001 = vec4(gx01.x,gy01.x,gz01.x,gw01.x);
+  vec4 g1001 = vec4(gx01.y,gy01.y,gz01.y,gw01.y);
+  vec4 g0101 = vec4(gx01.z,gy01.z,gz01.z,gw01.z);
+  vec4 g1101 = vec4(gx01.w,gy01.w,gz01.w,gw01.w);
+  vec4 g0011 = vec4(gx11.x,gy11.x,gz11.x,gw11.x);
+  vec4 g1011 = vec4(gx11.y,gy11.y,gz11.y,gw11.y);
+  vec4 g0111 = vec4(gx11.z,gy11.z,gz11.z,gw11.z);
+  vec4 g1111 = vec4(gx11.w,gy11.w,gz11.w,gw11.w);
+
+  vec4 norm00 = taylorInvSqrt(vec4(dot(g0000, g0000), dot(g0100, g0100), dot(g1000, g1000), dot(g1100, g1100)));
+  g0000 *= norm00.x;
+  g0100 *= norm00.y;
+  g1000 *= norm00.z;
+  g1100 *= norm00.w;
+
+  vec4 norm01 = taylorInvSqrt(vec4(dot(g0001, g0001), dot(g0101, g0101), dot(g1001, g1001), dot(g1101, g1101)));
+  g0001 *= norm01.x;
+  g0101 *= norm01.y;
+  g1001 *= norm01.z;
+  g1101 *= norm01.w;
+
+  vec4 norm10 = taylorInvSqrt(vec4(dot(g0010, g0010), dot(g0110, g0110), dot(g1010, g1010), dot(g1110, g1110)));
+  g0010 *= norm10.x;
+  g0110 *= norm10.y;
+  g1010 *= norm10.z;
+  g1110 *= norm10.w;
+
+  vec4 norm11 = taylorInvSqrt(vec4(dot(g0011, g0011), dot(g0111, g0111), dot(g1011, g1011), dot(g1111, g1111)));
+  g0011 *= norm11.x;
+  g0111 *= norm11.y;
+  g1011 *= norm11.z;
+  g1111 *= norm11.w;
+
+  float n0000 = dot(g0000, Pf0);
+  float n1000 = dot(g1000, vec4(Pf1.x, Pf0.yzw));
+  float n0100 = dot(g0100, vec4(Pf0.x, Pf1.y, Pf0.zw));
+  float n1100 = dot(g1100, vec4(Pf1.xy, Pf0.zw));
+  float n0010 = dot(g0010, vec4(Pf0.xy, Pf1.z, Pf0.w));
+  float n1010 = dot(g1010, vec4(Pf1.x, Pf0.y, Pf1.z, Pf0.w));
+  float n0110 = dot(g0110, vec4(Pf0.x, Pf1.yz, Pf0.w));
+  float n1110 = dot(g1110, vec4(Pf1.xyz, Pf0.w));
+  float n0001 = dot(g0001, vec4(Pf0.xyz, Pf1.w));
+  float n1001 = dot(g1001, vec4(Pf1.x, Pf0.yz, Pf1.w));
+  float n0101 = dot(g0101, vec4(Pf0.x, Pf1.y, Pf0.z, Pf1.w));
+  float n1101 = dot(g1101, vec4(Pf1.xy, Pf0.z, Pf1.w));
+  float n0011 = dot(g0011, vec4(Pf0.xy, Pf1.zw));
+  float n1011 = dot(g1011, vec4(Pf1.x, Pf0.y, Pf1.zw));
+  float n0111 = dot(g0111, vec4(Pf0.x, Pf1.yzw));
+  float n1111 = dot(g1111, Pf1);
+
+  vec4 fade_xyzw = fade(Pf0);
+  vec4 n_0w = mix(vec4(n0000, n1000, n0100, n1100), vec4(n0001, n1001, n0101, n1101), fade_xyzw.w);
+  vec4 n_1w = mix(vec4(n0010, n1010, n0110, n1110), vec4(n0011, n1011, n0111, n1111), fade_xyzw.w);
+  vec4 n_zw = mix(n_0w, n_1w, fade_xyzw.z);
+  vec2 n_yzw = mix(n_zw.xy, n_zw.zw, fade_xyzw.y);
+  float n_xyzw = mix(n_yzw.x, n_yzw.y, fade_xyzw.x);
+  return 2.2 * n_xyzw;
+}
+`
+
+},{}],29:[function(require,module,exports){
+module.exports = `
+#version 100
+precision highp float;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+attribute vec3 aPosition;
+varying vec3 pos;
+
+void main() {
+    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);
+    pos = (uModel * vec4(aPosition, 1)).xyz;
+}
+
+
+__split__
+
+
+#version 100
+precision highp float;
+
+uniform vec3 uColor;
+uniform vec3 uOffset;
+uniform float uScale;
+uniform float uIntensity;
+uniform float uFalloff;
+
+varying vec3 pos;
+
+__noise4d__
+
+float noise(vec3 p) {
+    return 0.5 * cnoise(vec4(p, 0)) + 0.5;
+}
+
+float nebula(vec3 p) {
+    const int steps = 6;
+    float scale = pow(2.0, float(steps));
+    vec3 displace;
+    for (int i = 0; i < steps; i++) {
+        displace = vec3(
+            noise(p.xyz * scale + displace),
+            noise(p.yzx * scale + displace),
+            noise(p.zxy * scale + displace)
+        );
+        scale *= 0.5;
+    }
+    return noise(p * scale + displace);
+}
+
+void main() {
+    vec3 posn = normalize(pos) * uScale;
+    float c = min(1.0, nebula(posn + uOffset) * uIntensity);
+    c = pow(c, uFalloff);
+    gl_FragColor = vec4(uColor, c);
+
+}
+`
+
+},{}],30:[function(require,module,exports){
+module.exports = `
+#version 100
+precision highp float;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+attribute vec3 aPosition;
+attribute vec3 aColor;
+
+varying vec3 color;
+
+void main() {
+    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);
+    color = aColor;
+}
+
+
+__split__
+
+
+#version 100
+precision highp float;
+
+
+varying vec3 color;
+
+void main() {
+    gl_FragColor = vec4(color, 1.0);
+
+}
+`
+
+},{}],31:[function(require,module,exports){
+module.exports = `
+#version 100
+precision highp float;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+attribute vec3 aPosition;
+attribute vec2 aUV;
+
+varying vec2 uv;
+
+void main() {
+    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);
+    uv = aUV;
+}
+
+
+__split__
+
+
+#version 100
+precision highp float;
+
+uniform sampler2D uTexture;
+
+varying vec2 uv;
+
+void main() {
+    gl_FragColor = texture2D(uTexture, uv);
+
+}
+`
+
+},{}],32:[function(require,module,exports){
+module.exports = `
+#version 100
+precision highp float;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+attribute vec3 aPosition;
+varying vec3 pos;
+
+void main() {
+    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);
+    pos = (uModel * vec4(aPosition, 1)).xyz;
+}
+
+
+__split__
+
+
+#version 100
+precision highp float;
+
+uniform vec3 uPosition;
+uniform vec3 uColor;
+uniform float uSize;
+uniform float uFalloff;
+
+varying vec3 pos;
+
+void main() {
+    vec3 posn = normalize(pos);
+    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);
+    float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);
+    c += pow(d, uFalloff) * 0.5;
+    vec3 color = mix(uColor, vec3(1,1,1), c);
+    gl_FragColor = vec4(color, c);
+
+}
+`
+
+},{}],33:[function(require,module,exports){
+arguments[4][32][0].apply(exports,arguments)
+},{"dup":32}],34:[function(require,module,exports){
 // jshint -W097
 // jshint undef: true, unused: true
 /* globals require,window,document,requestAnimationFrame,dat,location*/
@@ -11769,13 +12252,12 @@ function generateRandomSeed() {
   return (Math.random() * 1000000000000000000).toString(36);
 }
 ``
-},{"./skybox.js":29,"./space-3d.js":30,"filesaver.js":4,"gl-matrix":7,"jszip":18,"query-string":19}],29:[function(require,module,exports){
+},{"./skybox.js":35,"./space-3d.js":36,"filesaver.js":4,"gl-matrix":7,"jszip":18,"query-string":19}],35:[function(require,module,exports){
 // jshint -W097
 // jshint undef: true, unused: true
 /* globals require,__dirname,Float32Array,module*/
 
 "use strict";
-
 
 var glm = require("gl-matrix");
 var webgl = require("./webgl.js");
@@ -11788,7 +12270,7 @@ module.exports = function(renderCanvas) {
     self.initialize = function() {
         self.gl = renderCanvas.getContext("webgl");
         self.gl.pixelStorei(self.gl.UNPACK_FLIP_Y_WEBGL, true);
-        self.pSkybox = util.loadProgram(self.gl, "#version 100\nprecision highp float;\n\nuniform mat4 uModel;\nuniform mat4 uView;\nuniform mat4 uProjection;\n\nattribute vec3 aPosition;\nattribute vec2 aUV;\n\nvarying vec2 uv;\n\nvoid main() {\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\n    uv = aUV;\n}\n\n\n__split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uTexture;\n\nvarying vec2 uv;\n\nvoid main() {\n    gl_FragColor = texture2D(uTexture, uv);\n\n}\n");
+        self.pSkybox = util.loadProgram(self.gl, require("./glsl/skybox.js"));
         self.rSkybox = buildQuad(self.gl, self.pSkybox);
         self.textures = {};
     };
@@ -11874,13 +12356,12 @@ function buildQuad(gl, program) {
     return renderable;
 }
 
-},{"./util.js":31,"./webgl.js":32,"gl-matrix":7}],30:[function(require,module,exports){
+},{"./glsl/skybox.js":31,"./util.js":37,"./webgl.js":38,"gl-matrix":7}],36:[function(require,module,exports){
 // jshint -W097
 // jshint undef: true, unused: true
 /* globals require,document,__dirname,Float32Array,module*/
 
 "use strict";
-
 
 var glm = require("gl-matrix");
 var webgl = require("./webgl.js");
@@ -11907,22 +12388,10 @@ module.exports = function() {
     );
 
     // Load the programs.
-    self.pNebula = util.loadProgram(
-      self.gl,
-      "#version 100\nprecision highp float;\n\nuniform mat4 uModel;\nuniform mat4 uView;\nuniform mat4 uProjection;\n\nattribute vec3 aPosition;\nvarying vec3 pos;\n\nvoid main() {\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\n    pos = (uModel * vec4(aPosition, 1)).xyz;\n}\n\n\n__split__\n\n\n#version 100\nprecision highp float;\n\nuniform vec3 uColor;\nuniform vec3 uOffset;\nuniform float uScale;\nuniform float uIntensity;\nuniform float uFalloff;\n\nvarying vec3 pos;\n\n__noise4d__\n\nfloat noise(vec3 p) {\n    return 0.5 * cnoise(vec4(p, 0)) + 0.5;\n}\n\nfloat nebula(vec3 p) {\n    const int steps = 6;\n    float scale = pow(2.0, float(steps));\n    vec3 displace;\n    for (int i = 0; i < steps; i++) {\n        displace = vec3(\n            noise(p.xyz * scale + displace),\n            noise(p.yzx * scale + displace),\n            noise(p.zxy * scale + displace)\n        );\n        scale *= 0.5;\n    }\n    return noise(p * scale + displace);\n}\n\nvoid main() {\n    vec3 posn = normalize(pos) * uScale;\n    float c = min(1.0, nebula(posn + uOffset) * uIntensity);\n    c = pow(c, uFalloff);\n    gl_FragColor = vec4(uColor, c);\n\n}\n"
-    );
-    self.pPointStars = util.loadProgram(
-      self.gl,
-      "#version 100\nprecision highp float;\n\nuniform mat4 uModel;\nuniform mat4 uView;\nuniform mat4 uProjection;\n\nattribute vec3 aPosition;\nattribute vec3 aColor;\n\nvarying vec3 color;\n\nvoid main() {\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\n    color = aColor;\n}\n\n\n__split__\n\n\n#version 100\nprecision highp float;\n\n\nvarying vec3 color;\n\nvoid main() {\n    gl_FragColor = vec4(color, 1.0);\n\n}\n"
-    );
-    self.pStar = util.loadProgram(
-      self.gl,
-      "#version 100\nprecision highp float;\n\nuniform mat4 uModel;\nuniform mat4 uView;\nuniform mat4 uProjection;\n\nattribute vec3 aPosition;\nvarying vec3 pos;\n\nvoid main() {\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\n    pos = (uModel * vec4(aPosition, 1)).xyz;\n}\n\n\n__split__\n\n\n#version 100\nprecision highp float;\n\nuniform vec3 uPosition;\nuniform vec3 uColor;\nuniform float uSize;\nuniform float uFalloff;\n\nvarying vec3 pos;\n\nvoid main() {\n    vec3 posn = normalize(pos);\n    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);\n    float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);\n    c += pow(d, uFalloff) * 0.5;\n    vec3 color = mix(uColor, vec3(1,1,1), c);\n    gl_FragColor = vec4(color, c);\n\n}\n"
-    );
-    self.pSun = util.loadProgram(
-      self.gl,
-      "#version 100\nprecision highp float;\n\nuniform mat4 uModel;\nuniform mat4 uView;\nuniform mat4 uProjection;\n\nattribute vec3 aPosition;\nvarying vec3 pos;\n\nvoid main() {\n    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);\n    pos = (uModel * vec4(aPosition, 1)).xyz;\n}\n\n\n__split__\n\n\n#version 100\nprecision highp float;\n\nuniform vec3 uPosition;\nuniform vec3 uColor;\nuniform float uSize;\nuniform float uFalloff;\n\nvarying vec3 pos;\n\nvoid main() {\n    vec3 posn = normalize(pos);\n    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);\n    float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);\n    c += pow(d, uFalloff) * 0.5;\n    vec3 color = mix(uColor, vec3(1,1,1), c);\n    gl_FragColor = vec4(color, c);\n\n}\n"
-    );
+    self.pNebula = util.loadProgram(self.gl, require("./glsl/nebula.js"));
+    self.pPointStars = util.loadProgram(self.gl, require("./glsl/point-stars.js"));
+    self.pStar = util.loadProgram(self.gl, require("./glsl/star.js"));
+    self.pSun = util.loadProgram(self.gl, require("./glsl/sun.js"));
 
     // Create the point stars renderable.
     var rand = new rng.MT(hashcode("best seed ever") + 5000);
@@ -12359,27 +12828,24 @@ function shuffle(array) {
   return array;
 }
 
-},{"./util.js":31,"./webgl.js":32,"gl-matrix":7,"rng":24}],31:[function(require,module,exports){
-(function (Buffer){
+},{"./glsl/nebula.js":29,"./glsl/point-stars.js":30,"./glsl/star.js":32,"./glsl/sun.js":33,"./util.js":37,"./webgl.js":38,"gl-matrix":7,"rng":24}],37:[function(require,module,exports){
 // jshint -W097
 // jshint undef: true, unused: true
 /* globals require,__dirname,module*/
 
 "use strict";
 
-
 var webgl = require("./webgl.js");
 
 module.exports.loadProgram = function(gl, source) {
-    var noise4d = Buffer("Ly8KLy8gR0xTTCB0ZXh0dXJlbGVzcyBjbGFzc2ljIDREIG5vaXNlICJjbm9pc2UiLAovLyB3aXRoIGFuIFJTTC1zdHlsZSBwZXJpb2RpYyB2YXJpYW50ICJwbm9pc2UiLgovLyBBdXRob3I6ICBTdGVmYW4gR3VzdGF2c29uIChzdGVmYW4uZ3VzdGF2c29uQGxpdS5zZSkKLy8gVmVyc2lvbjogMjAxMS0wOC0yMgovLwovLyBNYW55IHRoYW5rcyB0byBJYW4gTWNFd2FuIG9mIEFzaGltYSBBcnRzIGZvciB0aGUKLy8gaWRlYXMgZm9yIHBlcm11dGF0aW9uIGFuZCBncmFkaWVudCBzZWxlY3Rpb24uCi8vCi8vIENvcHlyaWdodCAoYykgMjAxMSBTdGVmYW4gR3VzdGF2c29uLiBBbGwgcmlnaHRzIHJlc2VydmVkLgovLyBEaXN0cmlidXRlZCB1bmRlciB0aGUgTUlUIGxpY2Vuc2UuIFNlZSBMSUNFTlNFIGZpbGUuCi8vIGh0dHBzOi8vZ2l0aHViLmNvbS9hc2hpbWEvd2ViZ2wtbm9pc2UKLy8KCnZlYzQgbW9kMjg5KHZlYzQgeCkKewogIHJldHVybiB4IC0gZmxvb3IoeCAqICgxLjAgLyAyODkuMCkpICogMjg5LjA7Cn0KCnZlYzQgcGVybXV0ZSh2ZWM0IHgpCnsKICByZXR1cm4gbW9kMjg5KCgoeCozNC4wKSsxLjApKngpOwp9Cgp2ZWM0IHRheWxvckludlNxcnQodmVjNCByKQp7CiAgcmV0dXJuIDEuNzkyODQyOTE0MDAxNTkgLSAwLjg1MzczNDcyMDk1MzE0ICogcjsKfQoKdmVjNCBmYWRlKHZlYzQgdCkgewogIHJldHVybiB0KnQqdCoodCoodCo2LjAtMTUuMCkrMTAuMCk7Cn0KCi8vIENsYXNzaWMgUGVybGluIG5vaXNlCmZsb2F0IGNub2lzZSh2ZWM0IFApCnsKICB2ZWM0IFBpMCA9IGZsb29yKFApOyAvLyBJbnRlZ2VyIHBhcnQgZm9yIGluZGV4aW5nCiAgdmVjNCBQaTEgPSBQaTAgKyAxLjA7IC8vIEludGVnZXIgcGFydCArIDEKICBQaTAgPSBtb2QyODkoUGkwKTsKICBQaTEgPSBtb2QyODkoUGkxKTsKICB2ZWM0IFBmMCA9IGZyYWN0KFApOyAvLyBGcmFjdGlvbmFsIHBhcnQgZm9yIGludGVycG9sYXRpb24KICB2ZWM0IFBmMSA9IFBmMCAtIDEuMDsgLy8gRnJhY3Rpb25hbCBwYXJ0IC0gMS4wCiAgdmVjNCBpeCA9IHZlYzQoUGkwLngsIFBpMS54LCBQaTAueCwgUGkxLngpOwogIHZlYzQgaXkgPSB2ZWM0KFBpMC55eSwgUGkxLnl5KTsKICB2ZWM0IGl6MCA9IHZlYzQoUGkwLnp6enopOwogIHZlYzQgaXoxID0gdmVjNChQaTEuenp6eik7CiAgdmVjNCBpdzAgPSB2ZWM0KFBpMC53d3d3KTsKICB2ZWM0IGl3MSA9IHZlYzQoUGkxLnd3d3cpOwoKICB2ZWM0IGl4eSA9IHBlcm11dGUocGVybXV0ZShpeCkgKyBpeSk7CiAgdmVjNCBpeHkwID0gcGVybXV0ZShpeHkgKyBpejApOwogIHZlYzQgaXh5MSA9IHBlcm11dGUoaXh5ICsgaXoxKTsKICB2ZWM0IGl4eTAwID0gcGVybXV0ZShpeHkwICsgaXcwKTsKICB2ZWM0IGl4eTAxID0gcGVybXV0ZShpeHkwICsgaXcxKTsKICB2ZWM0IGl4eTEwID0gcGVybXV0ZShpeHkxICsgaXcwKTsKICB2ZWM0IGl4eTExID0gcGVybXV0ZShpeHkxICsgaXcxKTsKCiAgdmVjNCBneDAwID0gaXh5MDAgKiAoMS4wIC8gNy4wKTsKICB2ZWM0IGd5MDAgPSBmbG9vcihneDAwKSAqICgxLjAgLyA3LjApOwogIHZlYzQgZ3owMCA9IGZsb29yKGd5MDApICogKDEuMCAvIDYuMCk7CiAgZ3gwMCA9IGZyYWN0KGd4MDApIC0gMC41OwogIGd5MDAgPSBmcmFjdChneTAwKSAtIDAuNTsKICBnejAwID0gZnJhY3QoZ3owMCkgLSAwLjU7CiAgdmVjNCBndzAwID0gdmVjNCgwLjc1KSAtIGFicyhneDAwKSAtIGFicyhneTAwKSAtIGFicyhnejAwKTsKICB2ZWM0IHN3MDAgPSBzdGVwKGd3MDAsIHZlYzQoMC4wKSk7CiAgZ3gwMCAtPSBzdzAwICogKHN0ZXAoMC4wLCBneDAwKSAtIDAuNSk7CiAgZ3kwMCAtPSBzdzAwICogKHN0ZXAoMC4wLCBneTAwKSAtIDAuNSk7CgogIHZlYzQgZ3gwMSA9IGl4eTAxICogKDEuMCAvIDcuMCk7CiAgdmVjNCBneTAxID0gZmxvb3IoZ3gwMSkgKiAoMS4wIC8gNy4wKTsKICB2ZWM0IGd6MDEgPSBmbG9vcihneTAxKSAqICgxLjAgLyA2LjApOwogIGd4MDEgPSBmcmFjdChneDAxKSAtIDAuNTsKICBneTAxID0gZnJhY3QoZ3kwMSkgLSAwLjU7CiAgZ3owMSA9IGZyYWN0KGd6MDEpIC0gMC41OwogIHZlYzQgZ3cwMSA9IHZlYzQoMC43NSkgLSBhYnMoZ3gwMSkgLSBhYnMoZ3kwMSkgLSBhYnMoZ3owMSk7CiAgdmVjNCBzdzAxID0gc3RlcChndzAxLCB2ZWM0KDAuMCkpOwogIGd4MDEgLT0gc3cwMSAqIChzdGVwKDAuMCwgZ3gwMSkgLSAwLjUpOwogIGd5MDEgLT0gc3cwMSAqIChzdGVwKDAuMCwgZ3kwMSkgLSAwLjUpOwoKICB2ZWM0IGd4MTAgPSBpeHkxMCAqICgxLjAgLyA3LjApOwogIHZlYzQgZ3kxMCA9IGZsb29yKGd4MTApICogKDEuMCAvIDcuMCk7CiAgdmVjNCBnejEwID0gZmxvb3IoZ3kxMCkgKiAoMS4wIC8gNi4wKTsKICBneDEwID0gZnJhY3QoZ3gxMCkgLSAwLjU7CiAgZ3kxMCA9IGZyYWN0KGd5MTApIC0gMC41OwogIGd6MTAgPSBmcmFjdChnejEwKSAtIDAuNTsKICB2ZWM0IGd3MTAgPSB2ZWM0KDAuNzUpIC0gYWJzKGd4MTApIC0gYWJzKGd5MTApIC0gYWJzKGd6MTApOwogIHZlYzQgc3cxMCA9IHN0ZXAoZ3cxMCwgdmVjNCgwLjApKTsKICBneDEwIC09IHN3MTAgKiAoc3RlcCgwLjAsIGd4MTApIC0gMC41KTsKICBneTEwIC09IHN3MTAgKiAoc3RlcCgwLjAsIGd5MTApIC0gMC41KTsKCiAgdmVjNCBneDExID0gaXh5MTEgKiAoMS4wIC8gNy4wKTsKICB2ZWM0IGd5MTEgPSBmbG9vcihneDExKSAqICgxLjAgLyA3LjApOwogIHZlYzQgZ3oxMSA9IGZsb29yKGd5MTEpICogKDEuMCAvIDYuMCk7CiAgZ3gxMSA9IGZyYWN0KGd4MTEpIC0gMC41OwogIGd5MTEgPSBmcmFjdChneTExKSAtIDAuNTsKICBnejExID0gZnJhY3QoZ3oxMSkgLSAwLjU7CiAgdmVjNCBndzExID0gdmVjNCgwLjc1KSAtIGFicyhneDExKSAtIGFicyhneTExKSAtIGFicyhnejExKTsKICB2ZWM0IHN3MTEgPSBzdGVwKGd3MTEsIHZlYzQoMC4wKSk7CiAgZ3gxMSAtPSBzdzExICogKHN0ZXAoMC4wLCBneDExKSAtIDAuNSk7CiAgZ3kxMSAtPSBzdzExICogKHN0ZXAoMC4wLCBneTExKSAtIDAuNSk7CgogIHZlYzQgZzAwMDAgPSB2ZWM0KGd4MDAueCxneTAwLngsZ3owMC54LGd3MDAueCk7CiAgdmVjNCBnMTAwMCA9IHZlYzQoZ3gwMC55LGd5MDAueSxnejAwLnksZ3cwMC55KTsKICB2ZWM0IGcwMTAwID0gdmVjNChneDAwLnosZ3kwMC56LGd6MDAueixndzAwLnopOwogIHZlYzQgZzExMDAgPSB2ZWM0KGd4MDAudyxneTAwLncsZ3owMC53LGd3MDAudyk7CiAgdmVjNCBnMDAxMCA9IHZlYzQoZ3gxMC54LGd5MTAueCxnejEwLngsZ3cxMC54KTsKICB2ZWM0IGcxMDEwID0gdmVjNChneDEwLnksZ3kxMC55LGd6MTAueSxndzEwLnkpOwogIHZlYzQgZzAxMTAgPSB2ZWM0KGd4MTAueixneTEwLnosZ3oxMC56LGd3MTAueik7CiAgdmVjNCBnMTExMCA9IHZlYzQoZ3gxMC53LGd5MTAudyxnejEwLncsZ3cxMC53KTsKICB2ZWM0IGcwMDAxID0gdmVjNChneDAxLngsZ3kwMS54LGd6MDEueCxndzAxLngpOwogIHZlYzQgZzEwMDEgPSB2ZWM0KGd4MDEueSxneTAxLnksZ3owMS55LGd3MDEueSk7CiAgdmVjNCBnMDEwMSA9IHZlYzQoZ3gwMS56LGd5MDEueixnejAxLnosZ3cwMS56KTsKICB2ZWM0IGcxMTAxID0gdmVjNChneDAxLncsZ3kwMS53LGd6MDEudyxndzAxLncpOwogIHZlYzQgZzAwMTEgPSB2ZWM0KGd4MTEueCxneTExLngsZ3oxMS54LGd3MTEueCk7CiAgdmVjNCBnMTAxMSA9IHZlYzQoZ3gxMS55LGd5MTEueSxnejExLnksZ3cxMS55KTsKICB2ZWM0IGcwMTExID0gdmVjNChneDExLnosZ3kxMS56LGd6MTEueixndzExLnopOwogIHZlYzQgZzExMTEgPSB2ZWM0KGd4MTEudyxneTExLncsZ3oxMS53LGd3MTEudyk7CgogIHZlYzQgbm9ybTAwID0gdGF5bG9ySW52U3FydCh2ZWM0KGRvdChnMDAwMCwgZzAwMDApLCBkb3QoZzAxMDAsIGcwMTAwKSwgZG90KGcxMDAwLCBnMTAwMCksIGRvdChnMTEwMCwgZzExMDApKSk7CiAgZzAwMDAgKj0gbm9ybTAwLng7CiAgZzAxMDAgKj0gbm9ybTAwLnk7CiAgZzEwMDAgKj0gbm9ybTAwLno7CiAgZzExMDAgKj0gbm9ybTAwLnc7CgogIHZlYzQgbm9ybTAxID0gdGF5bG9ySW52U3FydCh2ZWM0KGRvdChnMDAwMSwgZzAwMDEpLCBkb3QoZzAxMDEsIGcwMTAxKSwgZG90KGcxMDAxLCBnMTAwMSksIGRvdChnMTEwMSwgZzExMDEpKSk7CiAgZzAwMDEgKj0gbm9ybTAxLng7CiAgZzAxMDEgKj0gbm9ybTAxLnk7CiAgZzEwMDEgKj0gbm9ybTAxLno7CiAgZzExMDEgKj0gbm9ybTAxLnc7CgogIHZlYzQgbm9ybTEwID0gdGF5bG9ySW52U3FydCh2ZWM0KGRvdChnMDAxMCwgZzAwMTApLCBkb3QoZzAxMTAsIGcwMTEwKSwgZG90KGcxMDEwLCBnMTAxMCksIGRvdChnMTExMCwgZzExMTApKSk7CiAgZzAwMTAgKj0gbm9ybTEwLng7CiAgZzAxMTAgKj0gbm9ybTEwLnk7CiAgZzEwMTAgKj0gbm9ybTEwLno7CiAgZzExMTAgKj0gbm9ybTEwLnc7CgogIHZlYzQgbm9ybTExID0gdGF5bG9ySW52U3FydCh2ZWM0KGRvdChnMDAxMSwgZzAwMTEpLCBkb3QoZzAxMTEsIGcwMTExKSwgZG90KGcxMDExLCBnMTAxMSksIGRvdChnMTExMSwgZzExMTEpKSk7CiAgZzAwMTEgKj0gbm9ybTExLng7CiAgZzAxMTEgKj0gbm9ybTExLnk7CiAgZzEwMTEgKj0gbm9ybTExLno7CiAgZzExMTEgKj0gbm9ybTExLnc7CgogIGZsb2F0IG4wMDAwID0gZG90KGcwMDAwLCBQZjApOwogIGZsb2F0IG4xMDAwID0gZG90KGcxMDAwLCB2ZWM0KFBmMS54LCBQZjAueXp3KSk7CiAgZmxvYXQgbjAxMDAgPSBkb3QoZzAxMDAsIHZlYzQoUGYwLngsIFBmMS55LCBQZjAuencpKTsKICBmbG9hdCBuMTEwMCA9IGRvdChnMTEwMCwgdmVjNChQZjEueHksIFBmMC56dykpOwogIGZsb2F0IG4wMDEwID0gZG90KGcwMDEwLCB2ZWM0KFBmMC54eSwgUGYxLnosIFBmMC53KSk7CiAgZmxvYXQgbjEwMTAgPSBkb3QoZzEwMTAsIHZlYzQoUGYxLngsIFBmMC55LCBQZjEueiwgUGYwLncpKTsKICBmbG9hdCBuMDExMCA9IGRvdChnMDExMCwgdmVjNChQZjAueCwgUGYxLnl6LCBQZjAudykpOwogIGZsb2F0IG4xMTEwID0gZG90KGcxMTEwLCB2ZWM0KFBmMS54eXosIFBmMC53KSk7CiAgZmxvYXQgbjAwMDEgPSBkb3QoZzAwMDEsIHZlYzQoUGYwLnh5eiwgUGYxLncpKTsKICBmbG9hdCBuMTAwMSA9IGRvdChnMTAwMSwgdmVjNChQZjEueCwgUGYwLnl6LCBQZjEudykpOwogIGZsb2F0IG4wMTAxID0gZG90KGcwMTAxLCB2ZWM0KFBmMC54LCBQZjEueSwgUGYwLnosIFBmMS53KSk7CiAgZmxvYXQgbjExMDEgPSBkb3QoZzExMDEsIHZlYzQoUGYxLnh5LCBQZjAueiwgUGYxLncpKTsKICBmbG9hdCBuMDAxMSA9IGRvdChnMDAxMSwgdmVjNChQZjAueHksIFBmMS56dykpOwogIGZsb2F0IG4xMDExID0gZG90KGcxMDExLCB2ZWM0KFBmMS54LCBQZjAueSwgUGYxLnp3KSk7CiAgZmxvYXQgbjAxMTEgPSBkb3QoZzAxMTEsIHZlYzQoUGYwLngsIFBmMS55encpKTsKICBmbG9hdCBuMTExMSA9IGRvdChnMTExMSwgUGYxKTsKCiAgdmVjNCBmYWRlX3h5encgPSBmYWRlKFBmMCk7CiAgdmVjNCBuXzB3ID0gbWl4KHZlYzQobjAwMDAsIG4xMDAwLCBuMDEwMCwgbjExMDApLCB2ZWM0KG4wMDAxLCBuMTAwMSwgbjAxMDEsIG4xMTAxKSwgZmFkZV94eXp3LncpOwogIHZlYzQgbl8xdyA9IG1peCh2ZWM0KG4wMDEwLCBuMTAxMCwgbjAxMTAsIG4xMTEwKSwgdmVjNChuMDAxMSwgbjEwMTEsIG4wMTExLCBuMTExMSksIGZhZGVfeHl6dy53KTsKICB2ZWM0IG5fencgPSBtaXgobl8wdywgbl8xdywgZmFkZV94eXp3LnopOwogIHZlYzIgbl95encgPSBtaXgobl96dy54eSwgbl96dy56dywgZmFkZV94eXp3LnkpOwogIGZsb2F0IG5feHl6dyA9IG1peChuX3l6dy54LCBuX3l6dy55LCBmYWRlX3h5encueCk7CiAgcmV0dXJuIDIuMiAqIG5feHl6dzsKfQoKLy8gQ2xhc3NpYyBQZXJsaW4gbm9pc2UsIHBlcmlvZGljIHZlcnNpb24KZmxvYXQgcG5vaXNlKHZlYzQgUCwgdmVjNCByZXApCnsKICB2ZWM0IFBpMCA9IG1vZChmbG9vcihQKSwgcmVwKTsgLy8gSW50ZWdlciBwYXJ0IG1vZHVsbyByZXAKICB2ZWM0IFBpMSA9IG1vZChQaTAgKyAxLjAsIHJlcCk7IC8vIEludGVnZXIgcGFydCArIDEgbW9kIHJlcAogIFBpMCA9IG1vZDI4OShQaTApOwogIFBpMSA9IG1vZDI4OShQaTEpOwogIHZlYzQgUGYwID0gZnJhY3QoUCk7IC8vIEZyYWN0aW9uYWwgcGFydCBmb3IgaW50ZXJwb2xhdGlvbgogIHZlYzQgUGYxID0gUGYwIC0gMS4wOyAvLyBGcmFjdGlvbmFsIHBhcnQgLSAxLjAKICB2ZWM0IGl4ID0gdmVjNChQaTAueCwgUGkxLngsIFBpMC54LCBQaTEueCk7CiAgdmVjNCBpeSA9IHZlYzQoUGkwLnl5LCBQaTEueXkpOwogIHZlYzQgaXowID0gdmVjNChQaTAuenp6eik7CiAgdmVjNCBpejEgPSB2ZWM0KFBpMS56enp6KTsKICB2ZWM0IGl3MCA9IHZlYzQoUGkwLnd3d3cpOwogIHZlYzQgaXcxID0gdmVjNChQaTEud3d3dyk7CgogIHZlYzQgaXh5ID0gcGVybXV0ZShwZXJtdXRlKGl4KSArIGl5KTsKICB2ZWM0IGl4eTAgPSBwZXJtdXRlKGl4eSArIGl6MCk7CiAgdmVjNCBpeHkxID0gcGVybXV0ZShpeHkgKyBpejEpOwogIHZlYzQgaXh5MDAgPSBwZXJtdXRlKGl4eTAgKyBpdzApOwogIHZlYzQgaXh5MDEgPSBwZXJtdXRlKGl4eTAgKyBpdzEpOwogIHZlYzQgaXh5MTAgPSBwZXJtdXRlKGl4eTEgKyBpdzApOwogIHZlYzQgaXh5MTEgPSBwZXJtdXRlKGl4eTEgKyBpdzEpOwoKICB2ZWM0IGd4MDAgPSBpeHkwMCAqICgxLjAgLyA3LjApOwogIHZlYzQgZ3kwMCA9IGZsb29yKGd4MDApICogKDEuMCAvIDcuMCk7CiAgdmVjNCBnejAwID0gZmxvb3IoZ3kwMCkgKiAoMS4wIC8gNi4wKTsKICBneDAwID0gZnJhY3QoZ3gwMCkgLSAwLjU7CiAgZ3kwMCA9IGZyYWN0KGd5MDApIC0gMC41OwogIGd6MDAgPSBmcmFjdChnejAwKSAtIDAuNTsKICB2ZWM0IGd3MDAgPSB2ZWM0KDAuNzUpIC0gYWJzKGd4MDApIC0gYWJzKGd5MDApIC0gYWJzKGd6MDApOwogIHZlYzQgc3cwMCA9IHN0ZXAoZ3cwMCwgdmVjNCgwLjApKTsKICBneDAwIC09IHN3MDAgKiAoc3RlcCgwLjAsIGd4MDApIC0gMC41KTsKICBneTAwIC09IHN3MDAgKiAoc3RlcCgwLjAsIGd5MDApIC0gMC41KTsKCiAgdmVjNCBneDAxID0gaXh5MDEgKiAoMS4wIC8gNy4wKTsKICB2ZWM0IGd5MDEgPSBmbG9vcihneDAxKSAqICgxLjAgLyA3LjApOwogIHZlYzQgZ3owMSA9IGZsb29yKGd5MDEpICogKDEuMCAvIDYuMCk7CiAgZ3gwMSA9IGZyYWN0KGd4MDEpIC0gMC41OwogIGd5MDEgPSBmcmFjdChneTAxKSAtIDAuNTsKICBnejAxID0gZnJhY3QoZ3owMSkgLSAwLjU7CiAgdmVjNCBndzAxID0gdmVjNCgwLjc1KSAtIGFicyhneDAxKSAtIGFicyhneTAxKSAtIGFicyhnejAxKTsKICB2ZWM0IHN3MDEgPSBzdGVwKGd3MDEsIHZlYzQoMC4wKSk7CiAgZ3gwMSAtPSBzdzAxICogKHN0ZXAoMC4wLCBneDAxKSAtIDAuNSk7CiAgZ3kwMSAtPSBzdzAxICogKHN0ZXAoMC4wLCBneTAxKSAtIDAuNSk7CgogIHZlYzQgZ3gxMCA9IGl4eTEwICogKDEuMCAvIDcuMCk7CiAgdmVjNCBneTEwID0gZmxvb3IoZ3gxMCkgKiAoMS4wIC8gNy4wKTsKICB2ZWM0IGd6MTAgPSBmbG9vcihneTEwKSAqICgxLjAgLyA2LjApOwogIGd4MTAgPSBmcmFjdChneDEwKSAtIDAuNTsKICBneTEwID0gZnJhY3QoZ3kxMCkgLSAwLjU7CiAgZ3oxMCA9IGZyYWN0KGd6MTApIC0gMC41OwogIHZlYzQgZ3cxMCA9IHZlYzQoMC43NSkgLSBhYnMoZ3gxMCkgLSBhYnMoZ3kxMCkgLSBhYnMoZ3oxMCk7CiAgdmVjNCBzdzEwID0gc3RlcChndzEwLCB2ZWM0KDAuMCkpOwogIGd4MTAgLT0gc3cxMCAqIChzdGVwKDAuMCwgZ3gxMCkgLSAwLjUpOwogIGd5MTAgLT0gc3cxMCAqIChzdGVwKDAuMCwgZ3kxMCkgLSAwLjUpOwoKICB2ZWM0IGd4MTEgPSBpeHkxMSAqICgxLjAgLyA3LjApOwogIHZlYzQgZ3kxMSA9IGZsb29yKGd4MTEpICogKDEuMCAvIDcuMCk7CiAgdmVjNCBnejExID0gZmxvb3IoZ3kxMSkgKiAoMS4wIC8gNi4wKTsKICBneDExID0gZnJhY3QoZ3gxMSkgLSAwLjU7CiAgZ3kxMSA9IGZyYWN0KGd5MTEpIC0gMC41OwogIGd6MTEgPSBmcmFjdChnejExKSAtIDAuNTsKICB2ZWM0IGd3MTEgPSB2ZWM0KDAuNzUpIC0gYWJzKGd4MTEpIC0gYWJzKGd5MTEpIC0gYWJzKGd6MTEpOwogIHZlYzQgc3cxMSA9IHN0ZXAoZ3cxMSwgdmVjNCgwLjApKTsKICBneDExIC09IHN3MTEgKiAoc3RlcCgwLjAsIGd4MTEpIC0gMC41KTsKICBneTExIC09IHN3MTEgKiAoc3RlcCgwLjAsIGd5MTEpIC0gMC41KTsKCiAgdmVjNCBnMDAwMCA9IHZlYzQoZ3gwMC54LGd5MDAueCxnejAwLngsZ3cwMC54KTsKICB2ZWM0IGcxMDAwID0gdmVjNChneDAwLnksZ3kwMC55LGd6MDAueSxndzAwLnkpOwogIHZlYzQgZzAxMDAgPSB2ZWM0KGd4MDAueixneTAwLnosZ3owMC56LGd3MDAueik7CiAgdmVjNCBnMTEwMCA9IHZlYzQoZ3gwMC53LGd5MDAudyxnejAwLncsZ3cwMC53KTsKICB2ZWM0IGcwMDEwID0gdmVjNChneDEwLngsZ3kxMC54LGd6MTAueCxndzEwLngpOwogIHZlYzQgZzEwMTAgPSB2ZWM0KGd4MTAueSxneTEwLnksZ3oxMC55LGd3MTAueSk7CiAgdmVjNCBnMDExMCA9IHZlYzQoZ3gxMC56LGd5MTAueixnejEwLnosZ3cxMC56KTsKICB2ZWM0IGcxMTEwID0gdmVjNChneDEwLncsZ3kxMC53LGd6MTAudyxndzEwLncpOwogIHZlYzQgZzAwMDEgPSB2ZWM0KGd4MDEueCxneTAxLngsZ3owMS54LGd3MDEueCk7CiAgdmVjNCBnMTAwMSA9IHZlYzQoZ3gwMS55LGd5MDEueSxnejAxLnksZ3cwMS55KTsKICB2ZWM0IGcwMTAxID0gdmVjNChneDAxLnosZ3kwMS56LGd6MDEueixndzAxLnopOwogIHZlYzQgZzExMDEgPSB2ZWM0KGd4MDEudyxneTAxLncsZ3owMS53LGd3MDEudyk7CiAgdmVjNCBnMDAxMSA9IHZlYzQoZ3gxMS54LGd5MTEueCxnejExLngsZ3cxMS54KTsKICB2ZWM0IGcxMDExID0gdmVjNChneDExLnksZ3kxMS55LGd6MTEueSxndzExLnkpOwogIHZlYzQgZzAxMTEgPSB2ZWM0KGd4MTEueixneTExLnosZ3oxMS56LGd3MTEueik7CiAgdmVjNCBnMTExMSA9IHZlYzQoZ3gxMS53LGd5MTEudyxnejExLncsZ3cxMS53KTsKCiAgdmVjNCBub3JtMDAgPSB0YXlsb3JJbnZTcXJ0KHZlYzQoZG90KGcwMDAwLCBnMDAwMCksIGRvdChnMDEwMCwgZzAxMDApLCBkb3QoZzEwMDAsIGcxMDAwKSwgZG90KGcxMTAwLCBnMTEwMCkpKTsKICBnMDAwMCAqPSBub3JtMDAueDsKICBnMDEwMCAqPSBub3JtMDAueTsKICBnMTAwMCAqPSBub3JtMDAuejsKICBnMTEwMCAqPSBub3JtMDAudzsKCiAgdmVjNCBub3JtMDEgPSB0YXlsb3JJbnZTcXJ0KHZlYzQoZG90KGcwMDAxLCBnMDAwMSksIGRvdChnMDEwMSwgZzAxMDEpLCBkb3QoZzEwMDEsIGcxMDAxKSwgZG90KGcxMTAxLCBnMTEwMSkpKTsKICBnMDAwMSAqPSBub3JtMDEueDsKICBnMDEwMSAqPSBub3JtMDEueTsKICBnMTAwMSAqPSBub3JtMDEuejsKICBnMTEwMSAqPSBub3JtMDEudzsKCiAgdmVjNCBub3JtMTAgPSB0YXlsb3JJbnZTcXJ0KHZlYzQoZG90KGcwMDEwLCBnMDAxMCksIGRvdChnMDExMCwgZzAxMTApLCBkb3QoZzEwMTAsIGcxMDEwKSwgZG90KGcxMTEwLCBnMTExMCkpKTsKICBnMDAxMCAqPSBub3JtMTAueDsKICBnMDExMCAqPSBub3JtMTAueTsKICBnMTAxMCAqPSBub3JtMTAuejsKICBnMTExMCAqPSBub3JtMTAudzsKCiAgdmVjNCBub3JtMTEgPSB0YXlsb3JJbnZTcXJ0KHZlYzQoZG90KGcwMDExLCBnMDAxMSksIGRvdChnMDExMSwgZzAxMTEpLCBkb3QoZzEwMTEsIGcxMDExKSwgZG90KGcxMTExLCBnMTExMSkpKTsKICBnMDAxMSAqPSBub3JtMTEueDsKICBnMDExMSAqPSBub3JtMTEueTsKICBnMTAxMSAqPSBub3JtMTEuejsKICBnMTExMSAqPSBub3JtMTEudzsKCiAgZmxvYXQgbjAwMDAgPSBkb3QoZzAwMDAsIFBmMCk7CiAgZmxvYXQgbjEwMDAgPSBkb3QoZzEwMDAsIHZlYzQoUGYxLngsIFBmMC55encpKTsKICBmbG9hdCBuMDEwMCA9IGRvdChnMDEwMCwgdmVjNChQZjAueCwgUGYxLnksIFBmMC56dykpOwogIGZsb2F0IG4xMTAwID0gZG90KGcxMTAwLCB2ZWM0KFBmMS54eSwgUGYwLnp3KSk7CiAgZmxvYXQgbjAwMTAgPSBkb3QoZzAwMTAsIHZlYzQoUGYwLnh5LCBQZjEueiwgUGYwLncpKTsKICBmbG9hdCBuMTAxMCA9IGRvdChnMTAxMCwgdmVjNChQZjEueCwgUGYwLnksIFBmMS56LCBQZjAudykpOwogIGZsb2F0IG4wMTEwID0gZG90KGcwMTEwLCB2ZWM0KFBmMC54LCBQZjEueXosIFBmMC53KSk7CiAgZmxvYXQgbjExMTAgPSBkb3QoZzExMTAsIHZlYzQoUGYxLnh5eiwgUGYwLncpKTsKICBmbG9hdCBuMDAwMSA9IGRvdChnMDAwMSwgdmVjNChQZjAueHl6LCBQZjEudykpOwogIGZsb2F0IG4xMDAxID0gZG90KGcxMDAxLCB2ZWM0KFBmMS54LCBQZjAueXosIFBmMS53KSk7CiAgZmxvYXQgbjAxMDEgPSBkb3QoZzAxMDEsIHZlYzQoUGYwLngsIFBmMS55LCBQZjAueiwgUGYxLncpKTsKICBmbG9hdCBuMTEwMSA9IGRvdChnMTEwMSwgdmVjNChQZjEueHksIFBmMC56LCBQZjEudykpOwogIGZsb2F0IG4wMDExID0gZG90KGcwMDExLCB2ZWM0KFBmMC54eSwgUGYxLnp3KSk7CiAgZmxvYXQgbjEwMTEgPSBkb3QoZzEwMTEsIHZlYzQoUGYxLngsIFBmMC55LCBQZjEuencpKTsKICBmbG9hdCBuMDExMSA9IGRvdChnMDExMSwgdmVjNChQZjAueCwgUGYxLnl6dykpOwogIGZsb2F0IG4xMTExID0gZG90KGcxMTExLCBQZjEpOwoKICB2ZWM0IGZhZGVfeHl6dyA9IGZhZGUoUGYwKTsKICB2ZWM0IG5fMHcgPSBtaXgodmVjNChuMDAwMCwgbjEwMDAsIG4wMTAwLCBuMTEwMCksIHZlYzQobjAwMDEsIG4xMDAxLCBuMDEwMSwgbjExMDEpLCBmYWRlX3h5encudyk7CiAgdmVjNCBuXzF3ID0gbWl4KHZlYzQobjAwMTAsIG4xMDEwLCBuMDExMCwgbjExMTApLCB2ZWM0KG4wMDExLCBuMTAxMSwgbjAxMTEsIG4xMTExKSwgZmFkZV94eXp3LncpOwogIHZlYzQgbl96dyA9IG1peChuXzB3LCBuXzF3LCBmYWRlX3h5encueik7CiAgdmVjMiBuX3l6dyA9IG1peChuX3p3Lnh5LCBuX3p3Lnp3LCBmYWRlX3h5encueSk7CiAgZmxvYXQgbl94eXp3ID0gbWl4KG5feXp3LngsIG5feXp3LnksIGZhZGVfeHl6dy54KTsKICByZXR1cm4gMi4yICogbl94eXp3Owp9Cg==","base64");
+    var noise4d = require("./glsl/classic-noise-4d.snip.js");
     source = source.replace("__noise4d__", noise4d);
     source = source.split("__split__");
     var program = new webgl.Program(gl, source[0], source[1]);
     return program;
 };
 
-}).call(this,require("buffer").Buffer)
-},{"./webgl.js":32,"buffer":2}],32:[function(require,module,exports){
+},{"./glsl/classic-noise-4d.snip.js":28,"./webgl.js":38}],38:[function(require,module,exports){
 
 /*...........................................................................*/
 function buildAttribs(gl, layout) {
@@ -12697,4 +13163,4 @@ function Program(gl, vertexSource, fragmentSource) {
 /*...........................................................................*/
 module.exports.Program = Program;
 
-},{}]},{},[28]);
+},{}]},{},[34]);

@@ -4,7 +4,6 @@
 
 "use strict";
 
-var fs = require("fs");
 var glm = require("gl-matrix");
 var webgl = require("./webgl.js");
 var util = require("./util.js");
@@ -30,22 +29,10 @@ module.exports = function() {
     );
 
     // Load the programs.
-    self.pNebula = util.loadProgram(
-      self.gl,
-      fs.readFileSync(__dirname + "/glsl/nebula.glsl", "utf8")
-    );
-    self.pPointStars = util.loadProgram(
-      self.gl,
-      fs.readFileSync(__dirname + "/glsl/point-stars.glsl", "utf8")
-    );
-    self.pStar = util.loadProgram(
-      self.gl,
-      fs.readFileSync(__dirname + "/glsl/star.glsl", "utf8")
-    );
-    self.pSun = util.loadProgram(
-      self.gl,
-      fs.readFileSync(__dirname + "/glsl/sun.glsl", "utf8")
-    );
+    self.pNebula = util.loadProgram(self.gl, require("./glsl/nebula.js"));
+    self.pPointStars = util.loadProgram(self.gl, require("./glsl/point-stars.js"));
+    self.pStar = util.loadProgram(self.gl, require("./glsl/star.js"));
+    self.pSun = util.loadProgram(self.gl, require("./glsl/sun.js"));
 
     // Create the point stars renderable.
     var rand = new rng.MT(hashcode("best seed ever") + 5000);
