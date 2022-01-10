@@ -11,15 +11,30 @@ var rng = require("rng");
 
 var NSTARS = 100000;
 
-module.exports = function() {
+module.exports = function(canvasOrContext = undefined) {
   var self = this;
 
-  self.initialize = function() {
-    // Initialize the offscreen rendering canvas.
-    self.canvas = document.createElement("canvas");
+  self.initialize = function(canvasOrContext = undefined) {
+    if (canvasOrContext instanceof HTMLCanvasElement) {
+      self.canvas = canvasOrContext;
+
+    } else if (canvasOrContext instanceof WebGLRenderingContext || canvasOrContext instanceof WebGL2RenderingContext) {
+      self.canvas = canvasOrContext.canvas;
+      self.gl = canvasOrContext;
+
+    } else {
+      canvasOrContext = undefined;
+    }
+
+    if (!self.canvas) {
+      self.canvas = document.createElement("canvas");
+    }
+
+    if (!self.gl) {
+      self.gl = self.canvas.getContext("webgl");
+    }
 
     // Initialize the gl context.
-    self.gl = self.canvas.getContext("webgl");
     self.gl.enable(self.gl.BLEND);
     self.gl.blendFuncSeparate(
       self.gl.SRC_ALPHA,
@@ -45,14 +60,14 @@ module.exports = function() {
       position.set(star.position, i * 18);
       color.set(star.color, i * 18);
     }
-    var attribs = webgl.buildAttribs(self.gl, { aPosition: 3, aColor: 3 });
-    attribs.aPosition.buffer.set(position);
-    attribs.aColor.buffer.set(color);
+    self.attribs = webgl.buildAttribs(self.gl, { aPosition: 3, aColor: 3 });
+    self.attribs.aPosition.buffer.set(position);
+    self.attribs.aColor.buffer.set(color);
     var count = position.length / 9;
     self.rPointStars = new webgl.Renderable(
       self.gl,
       self.pPointStars,
-      attribs,
+      self.attribs,
       count
     );
 
@@ -62,13 +77,23 @@ module.exports = function() {
     self.rStar = buildBox(self.gl, self.pStar);
   };
 
+  self.discard = function() {
+    webgl.discardAttribs(self.attribs);
+    self.pPointStars.discard();
+    self.pNebula.discard();
+    self.pStar.discard();
+    self.pSun.discard();
+  }
+
   self.render = function(params) {
     // We'll be returning a map of direction to texture.
     var textures = {};
 
-    // Handle changes to resolution.
-    self.canvas.width = self.canvas.height = params.resolution;
-    self.gl.viewport(0, 0, params.resolution, params.resolution);
+    if (!params.renderToTexture) {
+      // Handle changes to resolution.
+      self.canvas.width = self.canvas.height = params.resolution;
+      self.gl.viewport(0, 0, params.resolution, params.resolution);
+    }
 
     // Initialize the point star parameters.
     var rand = new rng.MT(hashcode(params.seed) + 1000);
@@ -172,9 +197,43 @@ module.exports = function() {
     var projection = glm.mat4.create();
     glm.mat4.perspective(projection, Math.PI / 2, 1.0, 0.1, 256);
 
+    var ext = self.gl instanceof WebGL2RenderingContext?{}:webgl.getExtensions(self.gl, ['WEBGL_draw_buffers']);
+
     // Iterate over the directions to render and create the textures.
     var keys = Object.keys(dirs);
     for (var i = 0; i < keys.length; i++) {
+      var framebuffer = undefined;
+      var framebufferIsTemp = false;
+
+      if (params.renderToTexture) {
+        var texture;
+        if (Array.isArray(params.renderToTexture)) {
+          if (params.renderToTexture[i] instanceof WebGLTexture) {
+            texture = params.renderToTexture[i];
+            textures[keys[i]] = texture;
+          } else if (params.renderToTexture[i] instanceof WebGLFramebuffer) {
+            framebuffer = params.renderToTexture[i];
+            textures[keys[i]] = framebuffer;
+            self.gl.bindFramebuffer(self.gl.FRAMEBUFFER, framebuffer);
+          }
+        } else if (params.renderToTexture===true) {
+          texture = new webgl.Texture(self.gl, 0, null, self.canvas.width, self.canvas.height, {
+            format: self.gl.RGB
+          });
+          textures[keys[i]] = texture;
+        }
+
+        if (texture&&!framebuffer) {
+          framebuffer = new webgl.Framebuffer(self.gl, [texture], undefined, ext['WEBGL_draw_buffers']);
+          framebufferIsTemp = true;
+          framebuffer.bind();
+        }
+
+        if (framebuffer) {
+          self.gl.viewport(0, 0, params.resolution, params.resolution);
+        }
+      }
+      
       // Clear the context.
       var backgroundColor = params.backgroundColor;
       self.gl.clearColor(backgroundColor[0]/255.0, backgroundColor[1]/255.0, backgroundColor[2]/255.0, 1.0);
@@ -245,18 +304,25 @@ module.exports = function() {
         self.rSun.render();
       }
 
-      // Create the texture.
-      var c = document.createElement("canvas");
-      c.width = c.height = params.resolution;
-      var ctx = c.getContext("2d");
-      ctx.drawImage(self.canvas, 0, 0);
-      textures[keys[i]] = c;
+      if (framebuffer) {
+        self.gl.bindFramebuffer(self.gl.FRAMEBUFFER, null);
+        if (framebufferIsTemp) {
+          framebuffer.discard();
+        }
+      } else {
+        // Create the texture.
+        var c = document.createElement("canvas");
+        c.width = c.height = params.resolution;
+        var ctx = c.getContext("2d");
+        ctx.drawImage(self.canvas, 0, 0);
+        textures[keys[i]] = c;
+      }
     }
 
     return textures;
   };
 
-  self.initialize();
+  self.initialize(canvasOrContext);
 };
 
 function buildStar(size, pos, dist, rand) {

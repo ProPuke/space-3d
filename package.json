@@ -2,7 +2,7 @@
   "name": "space-3d",
   "version": "1.0.0",
   "description": "Quickly generate procedural 3D space scenes in your browser with WebGL",
-  "main": "",
+  "main": "src/space-3d.js",
   "dependencies": {
     "brfs": "^2.0.2",
     "filesaver.js": "^1.3.4",
