@@ -115,8 +115,8 @@ module.exports = function(canvasOrContext = undefined) {
       starParams.push({
         pos: randomVec3(rand),
         color: cl,
-        size: rand.random() * 0.00000005 + 0.00000005,
-        falloff: rand.random() * 200000 + 10000
+        size: rand.random() * 0.00000002 + 0.000000005,
+        falloff: rand.random() * Math.pow(2,20) + Math.pow(2,16)
       });
       if (rand.random() < 0.01) {
         break;
