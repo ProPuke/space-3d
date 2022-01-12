@@ -12088,6 +12088,47 @@ void main() {
     vec3 posn = normalize(pos);
     float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);
     float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);
+    c += pow(pow(d, uFalloff) * 0.5, 4.0);
+    vec3 color = mix(uColor, vec3(1,1,1), c);
+    gl_FragColor = vec4(color, c);
+}
+`
+
+},{}],33:[function(require,module,exports){
+module.exports = `
+#version 100
+precision highp float;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+attribute vec3 aPosition;
+varying vec3 pos;
+
+void main() {
+    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1);
+    pos = (uModel * vec4(aPosition, 1)).xyz;
+}
+
+
+__split__
+
+
+#version 100
+precision highp float;
+
+uniform vec3 uPosition;
+uniform vec3 uColor;
+uniform float uSize;
+uniform float uFalloff;
+
+varying vec3 pos;
+
+void main() {
+    vec3 posn = normalize(pos);
+    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);
+    float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);
     c += pow(d, uFalloff) * 0.5;
     vec3 color = mix(uColor, vec3(1,1,1), c);
     gl_FragColor = vec4(color, c);
@@ -12095,9 +12136,7 @@ void main() {
 }
 `
 
-},{}],33:[function(require,module,exports){
-arguments[4][32][0].apply(exports,arguments)
-},{"dup":32}],34:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 // jshint -W097
 // jshint undef: true, unused: true
 /* globals require,window,document,requestAnimationFrame,dat,location*/
@@ -12593,9 +12632,9 @@ module.exports = function(canvasOrContext = undefined) {
     );
 
     // Create the nebula, sun, and star renderables.
-    self.rNebula = buildBox(self.gl, self.pNebula);
-    self.rSun = buildBox(self.gl, self.pSun);
-    self.rStar = buildBox(self.gl, self.pStar);
+    self.rNebula = buildBox(self.gl, 1.0, self.pNebula);
+    self.rSun = buildBox(self.gl, 0.45, self.pSun);
+    self.rStar = buildBox(self.gl, 0.005, self.pStar);
   };
 
   self.discard = function() {
@@ -12636,8 +12675,8 @@ module.exports = function(canvasOrContext = undefined) {
       starParams.push({
         pos: randomVec3(rand),
         color: cl,
-        size: rand.random() * 0.00000005 + 0.00000005,
-        falloff: rand.random() * 200000 + 10000
+        size: rand.random() * 0.00000002 + 0.000000005,
+        falloff: rand.random() * Math.pow(2,20) + Math.pow(2,16)
       });
       if (rand.random() < 0.01) {
         break;
@@ -12785,9 +12824,10 @@ module.exports = function(canvasOrContext = undefined) {
       self.pStar.use();
       self.pStar.setUniform("uView", "Matrix4fv", false, view);
       self.pStar.setUniform("uProjection", "Matrix4fv", false, projection);
-      self.pStar.setUniform("uModel", "Matrix4fv", false, model);
-      for (j = 0; j < starParams.length; j++) {
+      for (var j = 0; j < starParams.length; j++) {
         var s = starParams[j];
+        glm.mat4.fromTranslation(model, s.pos);
+        self.pStar.setUniform("uModel", "Matrix4fv", false, model);
         self.pStar.setUniform("uPosition", "3fv", s.pos);
         self.pStar.setUniform("uColor", "3fv", s.color);
         self.pStar.setUniform("uSize", "1f", s.size);
@@ -12800,9 +12840,9 @@ module.exports = function(canvasOrContext = undefined) {
       model = glm.mat4.create();
       for (j = 0; j < nebulaParams.length; j++) {
         var p = nebulaParams[j];
-        self.pNebula.setUniform("uModel", "Matrix4fv", false, model);
-        self.pNebula.setUniform("uView", "Matrix4fv", false, view);
-        self.pNebula.setUniform("uProjection", "Matrix4fv", false, projection);
+      self.pNebula.setUniform("uModel", "Matrix4fv", false, model);
+      self.pNebula.setUniform("uView", "Matrix4fv", false, view);
+      self.pNebula.setUniform("uProjection", "Matrix4fv", false, projection);
         self.pNebula.setUniform("uScale", "1f", p.scale);
         self.pNebula.setUniform("uColor", "3fv", p.color);
         self.pNebula.setUniform("uIntensity", "1f", p.intensity);
@@ -12815,9 +12855,10 @@ module.exports = function(canvasOrContext = undefined) {
       self.pSun.use();
       self.pSun.setUniform("uView", "Matrix4fv", false, view);
       self.pSun.setUniform("uProjection", "Matrix4fv", false, projection);
-      self.pSun.setUniform("uModel", "Matrix4fv", false, model);
       for (j = 0; j < sunParams.length; j++) {
         var sun = sunParams[j];
+        glm.mat4.fromTranslation(model, sun.pos);
+        self.pSun.setUniform("uModel", "Matrix4fv", false, model);
         self.pSun.setUniform("uPosition", "3fv", sun.pos);
         self.pSun.setUniform("uColor", "3fv", sun.color);
         self.pSun.setUniform("uSize", "1f", sun.size);
@@ -12876,121 +12917,121 @@ function buildStar(size, pos, dist, rand) {
   };
 }
 
-function buildBox(gl, program) {
+function buildBox(gl, radius, program) {
   var position = [
-    -1,
-    -1,
-    -1,
-    1,
-    -1,
-    -1,
-    1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1,
-    1,
-    1,
-    -1,
-    -1,
-    1,
-    -1,
+    -radius,
+    -radius,
+    -radius,
+    radius,
+    -radius,
+    -radius,
+    radius,
+    radius,
+    -radius,
+    -radius,
+    -radius,
+    -radius,
+    radius,
+    radius,
+    -radius,
+    -radius,
+    radius,
+    -radius,
 
-    1,
-    -1,
-    1,
-    -1,
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    1,
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    1,
-    1,
-    1,
+    radius,
+    -radius,
+    radius,
+    -radius,
+    -radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    radius,
+    -radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    radius,
+    radius,
+    radius,
 
-    1,
-    -1,
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    -1,
-    -1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    -1,
+    radius,
+    -radius,
+    -radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    radius,
+    radius,
+    radius,
+    -radius,
+    -radius,
+    radius,
+    radius,
+    radius,
+    radius,
+    radius,
+    -radius,
 
-    -1,
-    -1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1,
-    1,
-    -1,
-    -1,
-    -1,
-    1,
-    -1,
-    1,
-    -1,
-    -1,
-    1,
-    1,
+    -radius,
+    -radius,
+    radius,
+    -radius,
+    -radius,
+    -radius,
+    -radius,
+    radius,
+    -radius,
+    -radius,
+    -radius,
+    radius,
+    -radius,
+    radius,
+    -radius,
+    -radius,
+    radius,
+    radius,
 
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    -1,
-    1,
-    1,
-    1,
-    -1,
-    1,
-    -1,
-    1,
-    1,
-    1,
-    -1,
-    1,
-    1,
+    -radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    radius,
+    -radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    radius,
+    -radius,
+    radius,
+    radius,
 
-    -1,
-    -1,
-    1,
-    1,
-    -1,
-    1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1,
-    1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1
+    -radius,
+    -radius,
+    radius,
+    radius,
+    -radius,
+    radius,
+    radius,
+    -radius,
+    -radius,
+    -radius,
+    -radius,
+    radius,
+    radius,
+    -radius,
+    -radius,
+    -radius,
+    -radius,
+    -radius
   ];
   var attribs = webgl.buildAttribs(gl, { aPosition: 3 });
   attribs.aPosition.buffer.set(new Float32Array(position));
