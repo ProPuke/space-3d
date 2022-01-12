@@ -12634,7 +12634,7 @@ module.exports = function(canvasOrContext = undefined) {
     // Create the nebula, sun, and star renderables.
     self.rNebula = buildBox(self.gl, 1.0, self.pNebula);
     self.rSun = buildBox(self.gl, 0.45, self.pSun);
-    self.rStar = buildBox(self.gl, 0.005, self.pStar);
+    self.rStar = buildBox(self.gl, 0.0055, self.pStar);
   };
 
   self.discard = function() {
@@ -12675,8 +12675,8 @@ module.exports = function(canvasOrContext = undefined) {
       starParams.push({
         pos: randomVec3(rand),
         color: cl,
-        size: rand.random() * 0.00000002 + 0.000000005,
-        falloff: rand.random() * Math.pow(2,20) + Math.pow(2,16)
+        size: rand.random() * 0.00000002 + 0.00000001,
+        falloff: rand.random() * Math.pow(2,15) + Math.pow(2,15)
       });
       if (rand.random() < 0.01) {
         break;
