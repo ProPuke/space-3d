@@ -15,6 +15,9 @@ var resolution = 1024;
 
 window.onload = function() {
   var params = qs.parse(location.hash);
+  if (params.backgroundColor) { params.backgroundColor = hexToRgb(params.backgroundColor); }
+  if (params.nebulaColorBegin) { params.nebulaColorBegin = hexToRgb(params.nebulaColorBegin); }
+  if (params.nebulaColorEnd) { params.nebulaColorEnd = hexToRgb(params.nebulaColorEnd); }
 
   var ControlsMenu = function() {
     this.seed = params.seed || generateRandomSeed();
@@ -23,13 +26,13 @@ window.onload = function() {
       renderTextures();
     };
     this.randomColor = function() {
-      this.backgroundColor = [Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32];
-      this.nebulaColorBegin = [Math.random()*255,Math.random()*255,Math.random()*255];
-      this.nebulaColorEnd = [Math.random()*255,Math.random()*255,Math.random()*255];
+      this.backgroundColor = rgbToHex(Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32);
+      this.nebulaColorBegin = rgbToHex(Math.random()*255,Math.random()*255,Math.random()*255);
+      this.nebulaColorEnd = rgbToHex(Math.random()*255,Math.random()*255,Math.random()*255);
       renderTextures();
     };
     this.fov = parseInt(params.fov) || 80;
-    this.backgroundColor = params.backgroundColor === undefined ? [Math.random()*10,Math.random()*10,Math.random()*10] : params.backgroundColor;
+    this.backgroundColor = rgbToHex(... params.backgroundColor === undefined ? [Math.random()*10,Math.random()*10,Math.random()*10] : params.backgroundColor);
     this.pointStars =
       params.pointStars === undefined ? true : params.pointStars === "true";
     this.stars = params.stars === undefined ? true : params.stars === "true";
@@ -38,8 +41,8 @@ window.onload = function() {
     this.jpegQuality = params.jpegQuality === undefined ? 0.85 : parseFloat(params.jpegQuality);
     this.nebulae = params.nebulae === undefined ? true : params.nebulae === "true";
     this.nebulaOpacity = params.nebulaOpacity === undefined ? 33 : parseInt(params.nebulaOpacity);
-    this.nebulaColorBegin = params.nebulaColorBegin === undefined ? [Math.random()*255, Math.random()*255, Math.random()*255] : params.nebulaColorBegin;
-    this.nebulaColorEnd = params.nebulaColorEnd === undefined ? [Math.random()*255, Math.random()*255, Math.random()*255] : params.nebulaColorEnd;
+    this.nebulaColorBegin = rgbToHex(... params.nebulaColorBegin === undefined ? [Math.random()*255, Math.random()*255, Math.random()*255] : params.nebulaColorBegin);
+    this.nebulaColorEnd = rgbToHex(... params.nebulaColorEnd === undefined ? [Math.random()*255, Math.random()*255, Math.random()*255] : params.nebulaColorEnd);
     this.noiseScale = params.nebulaOpacity === undefined ? 5 : parseFloat(params.noiseScale);
     this.nebulaBrightness = params.nebulaBrightness === undefined ? 18 : parseInt(params.nebulaBrightness);
     this.resolution = parseInt(params.resolution) || 1024;
@@ -237,14 +240,14 @@ window.onload = function() {
   function renderTextures() {
     var textures = space.render({
       seed: menu.seed,
-      backgroundColor: menu.backgroundColor,
+      backgroundColor: hexToRgb(menu.backgroundColor),
       pointStars: menu.pointStars,
       stars: menu.stars,
       sun: menu.sun,
       sunFalloff: menu.sunFalloff,
       jpegQuality: menu.jpegQuality,
-      nebulaColorBegin: menu.nebulaColorBegin,
-      nebulaColorEnd: menu.nebulaColorEnd,
+      nebulaColorBegin: hexToRgb(menu.nebulaColorBegin),
+      nebulaColorEnd: hexToRgb(menu.nebulaColorEnd),
       nebulae: menu.nebulae,
       resolution: menu.resolution
     });
@@ -309,6 +312,19 @@ window.onload = function() {
 
   render();
 };
+
+function rgbToHex(r, g, b) {
+  return "#" + Math.floor(r).toString(16).padStart(2,'0') + Math.floor(g).toString(16).padStart(2,'0') + Math.floor(b).toString(16).padStart(2,'0');
+}
+
+function hexToRgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? [
+    parseInt(result[1], 16),
+    parseInt(result[2], 16),
+    parseInt(result[3], 16)
+  ] : [1, 1, 1];
+}
 
 function generateRandomSeed() {
   return (Math.random() * 1000000000000000000).toString(36);
