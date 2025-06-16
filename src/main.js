@@ -272,7 +272,7 @@ window.onload = function() {
   var space = new Space3D(resolution);
 
   function renderTextures() {
-    var textures = space.render({
+    var {textures} = space.render({
       seed: menu.seed,
       backgroundColor: hexToRgb(menu.backgroundColor),
       pointStars: menu.pointStars,

@@ -87,7 +87,24 @@ module.exports = function(canvasOrContext = undefined) {
   }
 
   self.render = function(params) {
-    if (!params.sunColor) params.sunColor = [rand.random()*255, rand.random()*255, rand.random()*255];
+    if(!params.seed) params.seed = (Math.random() * 1000000000000000000).toString(36);
+
+    var rand = new rng.MT(hashcode(params.seed));
+    // Set default values
+    params = {
+      ...{
+        stars: true,
+        pointStars: true,
+        nebulae: false,
+        nebulaColorBegin: [Math.random()*255,Math.random()*255,Math.random()*255],
+        nebulaColorEnd: [Math.random()*255,Math.random()*255,Math.random()*255],
+        sun: false,
+        sunColor: [rand.random()*255, rand.random()*255, rand.random()*255],
+        sunFalloff: 100,
+        backgroundColor: [Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32]
+      },
+      ...params
+    };
 
     // We'll be returning a map of direction to texture.
     var textures = {};
@@ -324,7 +341,10 @@ module.exports = function(canvasOrContext = undefined) {
       }
     }
 
-    return textures;
+    return {
+      options: params,
+      textures
+    }
   };
 
   self.initialize(canvasOrContext);
