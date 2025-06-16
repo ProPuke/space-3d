@@ -87,6 +87,8 @@ module.exports = function(canvasOrContext = undefined) {
   }
 
   self.render = function(params) {
+    if (!params.sunColor) params.sunColor = [rand.random()*255, rand.random()*255, rand.random()*255];
+
     // We'll be returning a map of direction to texture.
     var textures = {};
 
@@ -158,7 +160,7 @@ module.exports = function(canvasOrContext = undefined) {
     if (params.sun) {
       sunParams.push({
         pos: randomVec3(rand),
-        color: [rand.random(), rand.random(), rand.random()],
+        color: [params.sunColor[0]/255, params.sunColor[1]/255, params.sunColor[2]/255],
         size: rand.random() * 0.0001 + 0.0001,
         falloff: params.sunFalloff
       });

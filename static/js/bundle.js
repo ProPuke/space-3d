@@ -12155,33 +12155,61 @@ var resolution = 1024;
 window.onload = function() {
   var params = qs.parse(location.hash);
   if (params.backgroundColor) { params.backgroundColor = hexToRgb(params.backgroundColor); }
+  if (params.sunColor) { params.sunColor = hexToRgb(params.sunColor); }
   if (params.nebulaColorBegin) { params.nebulaColorBegin = hexToRgb(params.nebulaColorBegin); }
   if (params.nebulaColorEnd) { params.nebulaColorEnd = hexToRgb(params.nebulaColorEnd); }
 
   var ControlsMenu = function() {
     this.seed = params.seed || generateRandomSeed();
+
     this.randomSeed = function() {
       this.seed = generateRandomSeed();
+    };
+
+    this.randomSeedAndRender = function() {
+      randomSeed();
       renderTextures();
     };
+
+    this.randomSeedAndRender = function() {
+      this.randomSeed();
+      renderTextures();
+    };
+
     this.randomColor = function() {
+      var color1 = [Math.random()*255,Math.random()*255,Math.random()*255];
+      var color2 = [Math.random()*255,Math.random()*255,Math.random()*255];
+
       this.backgroundColor = rgbToHex(Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32);
-      this.nebulaColorBegin = rgbToHex(Math.random()*255,Math.random()*255,Math.random()*255);
-      this.nebulaColorEnd = rgbToHex(Math.random()*255,Math.random()*255,Math.random()*255);
-      renderTextures();
+
+      this.sunColor = rgbToHex(...mixColor(
+        saturateColor(mixColor(color1, color2, Math.random()), 2.0), // start with a hue within our standard colour range, but over-saturated
+        [255,255,255],
+        Math.pow(Math.random(), Math.random()>0.5?3.0:1.0/3.0) // then lean toward white, either strongly favouring white, or strongly the standard range
+      ));
+      this.nebulaColorBegin = rgbToHex(...color1);
+      this.nebulaColorEnd = rgbToHex(...color2);
     };
+
+    this.randomColorAndRender = function() {
+      this.randomColor();
+      renderTextures();
+    }
+
+    this.randomColor();
+    if(params.backgroundColor !== undefined) this.backgroundColor = rgbToHex(...params.backgroundColor);
+    if(params.sunColor !== undefined) this.sunColor = rgbToHex(...params.sunColor);
+    if(params.nebulaColorBegin !== undefined) this.nebulaColorBegin = rgbToHex(...params.nebulaColorBegin);
+    if(params.nebulaColorEnd !== undefined) this.nebulaColorEnd = rgbToHex(...params.nebulaColorEnd);
+
     this.fov = parseInt(params.fov) || 80;
-    this.backgroundColor = rgbToHex(... params.backgroundColor === undefined ? [Math.random()*10,Math.random()*10,Math.random()*10] : params.backgroundColor);
-    this.pointStars =
-      params.pointStars === undefined ? true : params.pointStars === "true";
+    this.pointStars = params.pointStars === undefined ? true : params.pointStars === "true";
     this.stars = params.stars === undefined ? true : params.stars === "true";
     this.sun = params.sun === undefined ? true : params.sun === "true";
     this.sunFalloff = params.sunFalloff === undefined ? 100 : parseFloat(params.sunFalloff);
     this.jpegQuality = params.jpegQuality === undefined ? 0.85 : parseFloat(params.jpegQuality);
     this.nebulae = params.nebulae === undefined ? true : params.nebulae === "true";
     this.nebulaOpacity = params.nebulaOpacity === undefined ? 33 : parseInt(params.nebulaOpacity);
-    this.nebulaColorBegin = rgbToHex(... params.nebulaColorBegin === undefined ? [Math.random()*255, Math.random()*255, Math.random()*255] : params.nebulaColorBegin);
-    this.nebulaColorEnd = rgbToHex(... params.nebulaColorEnd === undefined ? [Math.random()*255, Math.random()*255, Math.random()*255] : params.nebulaColorEnd);
     this.noiseScale = params.nebulaOpacity === undefined ? 5 : parseFloat(params.noiseScale);
     this.nebulaBrightness = params.nebulaBrightness === undefined ? 18 : parseInt(params.nebulaBrightness);
     this.resolution = parseInt(params.resolution) || 1024;
@@ -12257,8 +12285,8 @@ window.onload = function() {
     .name("Seed")
     .listen()
     .onFinishChange(renderTextures);
-  gui.add(menu, "randomSeed").name("Randomize seed");
-  gui.add(menu, "randomColor").name("Randomize colors");
+  gui.add(menu, "randomSeedAndRender").name("Randomize seed");
+  gui.add(menu, "randomColorAndRender").name("Randomize colors");
   gui.add(menu, "fov", 10, 150, 1).name("Field of view °");
   gui
     .addColor(menu, 'backgroundColor')
@@ -12276,6 +12304,11 @@ window.onload = function() {
   gui
     .add(menu, "sun")
     .name("Sun")
+    .onChange(renderTextures);
+  gui
+    .addColor(menu, 'sunColor')
+    .listen()
+    .name("Sun color")
     .onChange(renderTextures);
   gui
     .add(menu, "sunFalloff", 50, 250, 1)
@@ -12346,6 +12379,7 @@ window.onload = function() {
       pointStars: menu.pointStars,
       stars: menu.stars,
       sun: menu.sun,
+      sunColor: menu.sunColor,
       sunFalloff: menu.sunFalloff,
       jpegQuality: menu.jpegQuality,
       nebulaColorBegin: menu.nebulaColorBegin,
@@ -12383,6 +12417,7 @@ window.onload = function() {
       pointStars: menu.pointStars,
       stars: menu.stars,
       sun: menu.sun,
+      sunColor: hexToRgb(menu.sunColor),
       sunFalloff: menu.sunFalloff,
       jpegQuality: menu.jpegQuality,
       nebulaColorBegin: hexToRgb(menu.nebulaColorBegin),
@@ -12451,6 +12486,27 @@ window.onload = function() {
 
   render();
 };
+
+function mix(a, b, x) {
+  return a + (b-a) * x;
+}
+
+function mixColor(a, b, x) {
+  return [mix(a[0], b[0], x), mix(a[1], b[1], x), mix(a[2], b[2], x)];
+}
+
+function getColorBrightness(color) {
+  return 0.299*color[0]+0.587*color[1]+0.114*color[2];
+}
+
+function saturateColor(a, x) {
+  const brightness = getColorBrightness(a);
+  return clampColor(mixColor([brightness, brightness, brightness], a, x));
+}
+
+function clampColor(color) {
+  return [Math.min(color[0], 255), Math.min(color[1], 255), Math.min(color[2], 255)];
+}
 
 function rgbToHex(r, g, b) {
   return "#" + Math.floor(r).toString(16).padStart(2,'0') + Math.floor(g).toString(16).padStart(2,'0') + Math.floor(b).toString(16).padStart(2,'0');
@@ -12663,6 +12719,8 @@ module.exports = function(canvasOrContext = undefined) {
   }
 
   self.render = function(params) {
+    if (!params.sunColor) params.sunColor = [rand.random()*255, rand.random()*255, rand.random()*255];
+
     // We'll be returning a map of direction to texture.
     var textures = {};
 
@@ -12734,7 +12792,7 @@ module.exports = function(canvasOrContext = undefined) {
     if (params.sun) {
       sunParams.push({
         pos: randomVec3(rand),
-        color: [rand.random(), rand.random(), rand.random()],
+        color: [params.sunColor[0]/255, params.sunColor[1]/255, params.sunColor[2]/255],
         size: rand.random() * 0.0001 + 0.0001,
         falloff: params.sunFalloff
       });

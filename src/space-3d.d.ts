@@ -12,6 +12,7 @@ declare class Space3d {
 		nebulaColorBegin:[number,number,number],
 		nebulaColorEnd:[number,number,number],
 		sun: boolean,
+		sunColor?: [number,number,number],
 		sunFalloff: number,
 		backgroundColor: [number,number,number],
 		renderToTexture?: false
@@ -26,6 +27,7 @@ declare class Space3d {
 		nebulaColorBegin:[number,number,number],
 		nebulaColorEnd:[number,number,number],
 		sun: boolean,
+		sunColor?: [number,number,number],
 		sunFalloff: number,
 		backgroundColor: [number,number,number],
 		renderToTexture: [WebGLFramebuffer,WebGLFramebuffer,WebGLFramebuffer,WebGLFramebuffer,WebGLFramebuffer,WebGLFramebuffer]
@@ -40,6 +42,7 @@ declare class Space3d {
 		nebulaColorBegin:[number,number,number],
 		nebulaColorEnd:[number,number,number],
 		sun: boolean,
+		sunColor?: [number,number,number],
 		sunFalloff: number,
 		backgroundColor: [number,number,number],
 		renderToTexture: [WebGLTexture,WebGLTexture,WebGLTexture,WebGLTexture,WebGLTexture,WebGLTexture]|true
