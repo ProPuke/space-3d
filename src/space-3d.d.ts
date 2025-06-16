@@ -21,21 +21,21 @@ declare class Space3d {
 	render(options:CommonRenderOptions|{
 			renderToTexture?:false
 	}):{
-		options: CommonRenderOptions,
+		options: Required<CommonRenderOptions>,
 		textures: Record<'front'|'back'|'left'|'right'|'top'|'bottom',HTMLCanvasElement>
 	};
 
 	render(options:CommonRenderOptions|{
 			renderToTexture:[WebGLFramebuffer,WebGLFramebuffer,WebGLFramebuffer,WebGLFramebuffer,WebGLFramebuffer,WebGLFramebuffer]
 	}):{
-		options: CommonRenderOptions,
+		options: Required<CommonRenderOptions>,
 		textures: Record<'front'|'back'|'left'|'right'|'top'|'bottom',WebGLFramebuffer>
 	};
 
 	render(options:CommonRenderOptions|{
 			renderToTexture:[WebGLTexture,WebGLTexture,WebGLTexture,WebGLTexture,WebGLTexture,WebGLTexture]
 	}):{
-		options: CommonRenderOptions,
+		options: Required<CommonRenderOptions>,
 		textures: Record<'front'|'back'|'left'|'right'|'top'|'bottom',WebGLTexture>
 	};
 }
