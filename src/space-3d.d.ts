@@ -7,6 +7,7 @@ type CommonRenderOptions = {
 	nebulaColorBegin?:[number,number,number],
 	nebulaColorEnd?:[number,number,number],
 	sun?: boolean,
+	sunPosition?: [number,number,number],
 	sunColor?: [number,number,number],
 	sunFalloff?: number,
 	backgroundColor?: [number,number,number],

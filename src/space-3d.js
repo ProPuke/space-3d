@@ -99,6 +99,7 @@ module.exports = function(canvasOrContext = undefined) {
         nebulaColorBegin: [Math.random()*255,Math.random()*255,Math.random()*255],
         nebulaColorEnd: [Math.random()*255,Math.random()*255,Math.random()*255],
         sun: false,
+        sunPosition: randomVec3(rand),
         sunColor: [rand.random()*255, rand.random()*255, rand.random()*255],
         sunFalloff: 100,
         backgroundColor: [Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32]
@@ -176,7 +177,7 @@ module.exports = function(canvasOrContext = undefined) {
     var sunParams = [];
     if (params.sun) {
       sunParams.push({
-        pos: randomVec3(rand),
+        pos: params.sunPosition,
         color: [params.sunColor[0]/255, params.sunColor[1]/255, params.sunColor[2]/255],
         size: rand.random() * 0.0001 + 0.0001,
         falloff: params.sunFalloff

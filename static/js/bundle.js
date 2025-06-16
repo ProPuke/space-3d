@@ -12280,65 +12280,101 @@ window.onload = function() {
     autoPlace: false,
     width: 320
   });
-  gui
+
+  const randomGui = gui.addFolder("Randomisation");
+  randomGui.open();
+  randomGui
     .add(menu, "seed")
-    .name("Seed")
+    .name("Random Seed")
     .listen()
     .onFinishChange(renderTextures);
-  gui.add(menu, "randomSeedAndRender").name("Randomize seed");
-  gui.add(menu, "randomColorAndRender").name("Randomize colors");
-  gui.add(menu, "fov", 10, 150, 1).name("Field of view °");
-  gui
+  randomGui
+    .add(menu, "randomSeedAndRender")
+    .name("Randomise seed");
+  randomGui
+    .add(menu, "randomColorAndRender")
+    .name("Randomise colors");
+
+  const viewGui = gui.addFolder("View");
+  viewGui.open();
+  viewGui
+    .add(menu, "fov", 10, 150, 1)
+    .name("Field of view °");
+  viewGui
+    .add(menu, "animationSpeed", 0, 10)
+    .name("Animation speed");
+
+  const backgroundGui = gui.addFolder("Background");
+  backgroundGui.open();
+  backgroundGui
     .addColor(menu, 'backgroundColor')
     .listen()
-    .name("Background color")
+    .name("Color")
     .onChange(renderTextures);
-  gui
+  
+  const starGui = gui.addFolder("Stars");
+  starGui.open();
+  starGui
     .add(menu, "pointStars")
-    .name("Point stars")
+    .name("Enable point stars")
     .onChange(renderTextures);
-  gui
+  starGui
     .add(menu, "stars")
-    .name("Bright stars")
+    .name("Enable bright stars")
     .onChange(renderTextures);
-  gui
+
+  const sunGui = gui.addFolder("Sun");
+  sunGui.open();
+  sunGui
     .add(menu, "sun")
-    .name("Sun")
+    .name("Enable")
     .onChange(renderTextures);
-  gui
+  sunGui
     .addColor(menu, 'sunColor')
     .listen()
-    .name("Sun color")
+    .name("Color")
     .onChange(renderTextures);
-  gui
+  sunGui
     .add(menu, "sunFalloff", 50, 250, 1)
-    .name("Sun Falloff")
+    .name("Falloff")
     .onFinishChange(renderTextures);
-  gui
+
+  const nebulaGui = gui.addFolder("Nebulae");
+  nebulaGui.open();
+  nebulaGui
     .add(menu, "nebulae")
-    .name("Nebulae")
+    .name("Enable")
     .onChange(renderTextures);
-  gui
+  nebulaGui
     .addColor(menu, 'nebulaColorBegin')
     .listen()
-    .name("Nebula Color Begin")
+    .name("Color 1")
     .onChange(renderTextures);
-  gui
+  nebulaGui
     .addColor(menu, 'nebulaColorEnd')
     .listen()
-    .name("Nebula Color End")
+    .name("Color 2")
     .onChange(renderTextures);
-  gui
+
+  const resolutionGui = gui.addFolder("Resolution");
+    resolutionGui.open();
+  resolutionGui
     .add(menu, "resolution", [256, 512, 1024, 2048, 4096])
     .name("Resolution")
     .onChange(renderTextures);
-  gui.add(menu, "animationSpeed", 0, 10).name("Animation speed");
-  gui.add(menu, "saveSkybox").name("Download skybox png");
-  gui
+
+  const exportGui = gui.addFolder("Download");
+  exportGui.open();
+  exportGui
+    .add(menu, "saveSkybox")
+    .name("Download skybox png");
+  exportGui
     .add(menu, "jpegQuality", 0.5, 1, 0.01)
     .name("Jpeg Quality")
     .onFinishChange(renderTextures);
-  gui.add(menu, "saveSkyboxJpg").name("Download skybox jpeg");
+  exportGui
+    .add(menu, "saveSkyboxJpg")
+    .name("Download skybox jpeg");
 
   document.body.appendChild(gui.domElement);
   gui.domElement.style.position = "fixed";
@@ -12731,6 +12767,7 @@ module.exports = function(canvasOrContext = undefined) {
         nebulaColorBegin: [Math.random()*255,Math.random()*255,Math.random()*255],
         nebulaColorEnd: [Math.random()*255,Math.random()*255,Math.random()*255],
         sun: false,
+        sunPosition: randomVec3(rand),
         sunColor: [rand.random()*255, rand.random()*255, rand.random()*255],
         sunFalloff: 100,
         backgroundColor: [Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32]
@@ -12808,7 +12845,7 @@ module.exports = function(canvasOrContext = undefined) {
     var sunParams = [];
     if (params.sun) {
       sunParams.push({
-        pos: randomVec3(rand),
+        pos: params.sunPosition,
         color: [params.sunColor[0]/255, params.sunColor[1]/255, params.sunColor[2]/255],
         size: rand.random() * 0.0001 + 0.0001,
         falloff: params.sunFalloff
