@@ -12770,7 +12770,8 @@ module.exports = function(canvasOrContext = undefined) {
         sunPosition: randomVec3(rand),
         sunColor: [rand.random()*255, rand.random()*255, rand.random()*255],
         sunFalloff: 100,
-        backgroundColor: [Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32]
+        backgroundColor: [Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32],
+        renderFlipY: false
       },
       ...params
     };
@@ -12931,6 +12932,10 @@ module.exports = function(canvasOrContext = undefined) {
       // Look in the direction for this texture.
       var dir = dirs[keys[i]];
       glm.mat4.lookAt(view, [0, 0, 0], dir.target, dir.up);
+
+      if(params.renderFlipY){
+        glm.mat4.mul(view, glm.mat4.fromScaling(glm.mat4.create(), [1,-1,1]), view);
+      }
 
       // Render the point stars.
       self.pPointStars.use();

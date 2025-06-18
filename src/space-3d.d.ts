@@ -11,6 +11,7 @@ type CommonRenderOptions = {
 	sunColor?: [number,number,number],
 	sunFalloff?: number,
 	backgroundColor?: [number,number,number],
+	renderFlipY?: bool
 }
 
 declare class Space3d {
