@@ -12764,13 +12764,13 @@ module.exports = function(canvasOrContext = undefined) {
         stars: true,
         pointStars: true,
         nebulae: false,
-        nebulaColorBegin: [Math.random()*255,Math.random()*255,Math.random()*255],
-        nebulaColorEnd: [Math.random()*255,Math.random()*255,Math.random()*255],
+        nebulaColorBegin: [rand.random()*255,rand.random()*255,rand.random()*255],
+        nebulaColorEnd: [rand.random()*255,rand.random()*255,rand.random()*255],
         sun: false,
         sunPosition: randomVec3(rand),
         sunColor: [rand.random()*255, rand.random()*255, rand.random()*255],
         sunFalloff: 100,
-        backgroundColor: [Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32,Math.pow(Math.random(),2)*32],
+        backgroundColor: [Math.pow(rand.random(),2)*32,Math.pow(rand.random(),2)*32,Math.pow(rand.random(),2)*32],
         renderFlipY: false
       },
       ...params
