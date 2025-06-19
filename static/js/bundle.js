@@ -12127,12 +12127,11 @@ varying vec3 pos;
 
 void main() {
     vec3 posn = normalize(pos);
-    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);
+    float d = clamp(dot(posn, normalize(uPosition))*5.0-4.0, 0.0, 1.0);
     float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);
-    c += pow(d, uFalloff) * 0.5;
-    vec3 color = mix(uColor, vec3(1,1,1), c);
+    c += pow(d, uFalloff) * 0.8;
+    vec3 color = uColor + c * 0.9;
     gl_FragColor = vec4(color, c);
-
 }
 `
 
@@ -12206,7 +12205,7 @@ window.onload = function() {
     this.pointStars = params.pointStars === undefined ? true : params.pointStars === "true";
     this.stars = params.stars === undefined ? true : params.stars === "true";
     this.sun = params.sun === undefined ? true : params.sun === "true";
-    this.sunFalloff = params.sunFalloff === undefined ? 100 : parseFloat(params.sunFalloff);
+    this.sunFalloff = params.sunFalloff === undefined ? 10 : parseFloat(params.sunFalloff);
     this.jpegQuality = params.jpegQuality === undefined ? 0.85 : parseFloat(params.jpegQuality);
     this.nebulae = params.nebulae === undefined ? true : params.nebulae === "true";
     this.nebulaOpacity = params.nebulaOpacity === undefined ? 33 : parseInt(params.nebulaOpacity);
@@ -12335,7 +12334,7 @@ window.onload = function() {
     .name("Color")
     .onChange(renderTextures);
   sunGui
-    .add(menu, "sunFalloff", 50, 250, 1)
+    .add(menu, "sunFalloff", 2, 30, 1)
     .name("Falloff")
     .onFinishChange(renderTextures);
 
@@ -12704,12 +12703,7 @@ module.exports = function(canvasOrContext = undefined) {
 
     // Initialize the gl context.
     self.gl.enable(self.gl.BLEND);
-    self.gl.blendFuncSeparate(
-      self.gl.SRC_ALPHA,
-      self.gl.ONE_MINUS_SRC_ALPHA,
-      self.gl.ZERO,
-      self.gl.ONE
-    );
+    self.gl.enable(self.gl.CULL_FACE); // avoid front and back faces overlapping with other blend modes
 
     // Load the programs.
     self.pNebula = util.loadProgram(self.gl, require("./glsl/nebula.js"));
@@ -12742,7 +12736,7 @@ module.exports = function(canvasOrContext = undefined) {
 
     // Create the nebula, sun, and star renderables.
     self.rNebula = buildBox(self.gl, 1.0, self.pNebula);
-    self.rSun = buildBox(self.gl, 0.45, self.pSun);
+    self.rSun = buildBox(self.gl, 0.5, self.pSun);
     self.rStar = buildBox(self.gl, 0.0055, self.pStar);
   };
 
@@ -12769,7 +12763,8 @@ module.exports = function(canvasOrContext = undefined) {
         sun: false,
         sunPosition: randomVec3(rand),
         sunColor: [rand.random()*255, rand.random()*255, rand.random()*255],
-        sunFalloff: 100,
+        sunSize: 0.05 + (rand.random()+rand.random()+rand.random())/3 * 0.5,
+        sunFalloff: 10,
         backgroundColor: [Math.pow(rand.random(),2)*32,Math.pow(rand.random(),2)*32,Math.pow(rand.random(),2)*32],
         renderFlipY: false
       },
@@ -12848,7 +12843,7 @@ module.exports = function(canvasOrContext = undefined) {
       sunParams.push({
         pos: params.sunPosition,
         color: [params.sunColor[0]/255, params.sunColor[1]/255, params.sunColor[2]/255],
-        size: rand.random() * 0.0001 + 0.0001,
+        size: params.sunSize * 0.001,
         falloff: params.sunFalloff
       });
     }
@@ -12923,6 +12918,9 @@ module.exports = function(canvasOrContext = undefined) {
           self.gl.viewport(0, 0, params.resolution, params.resolution);
         }
       }
+
+      // Alpha blending for regular content
+      self.gl.blendFuncSeparate(self.gl.SRC_ALPHA, self.gl.ONE_MINUS_SRC_ALPHA, self.gl.ZERO, self.gl.ONE);
       
       // Clear the context.
       var backgroundColor = params.backgroundColor;
@@ -12984,6 +12982,9 @@ module.exports = function(canvasOrContext = undefined) {
         self.pNebula.setUniform("uOffset", "3fv", p.offset);
         self.rNebula.render();
       }
+
+      // Additive blending
+      self.gl.blendFuncSeparate(self.gl.SRC_ALPHA, self.gl.ONE, self.gl.ZERO, self.gl.ONE);
 
       // Render the suns.
       self.pSun.use();

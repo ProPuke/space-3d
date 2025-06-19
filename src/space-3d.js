@@ -36,12 +36,7 @@ module.exports = function(canvasOrContext = undefined) {
 
     // Initialize the gl context.
     self.gl.enable(self.gl.BLEND);
-    self.gl.blendFuncSeparate(
-      self.gl.SRC_ALPHA,
-      self.gl.ONE_MINUS_SRC_ALPHA,
-      self.gl.ZERO,
-      self.gl.ONE
-    );
+    self.gl.enable(self.gl.CULL_FACE); // avoid front and back faces overlapping with other blend modes
 
     // Load the programs.
     self.pNebula = util.loadProgram(self.gl, require("./glsl/nebula.js"));
@@ -74,7 +69,7 @@ module.exports = function(canvasOrContext = undefined) {
 
     // Create the nebula, sun, and star renderables.
     self.rNebula = buildBox(self.gl, 1.0, self.pNebula);
-    self.rSun = buildBox(self.gl, 0.45, self.pSun);
+    self.rSun = buildBox(self.gl, 0.5, self.pSun);
     self.rStar = buildBox(self.gl, 0.0055, self.pStar);
   };
 
@@ -101,7 +96,8 @@ module.exports = function(canvasOrContext = undefined) {
         sun: false,
         sunPosition: randomVec3(rand),
         sunColor: [rand.random()*255, rand.random()*255, rand.random()*255],
-        sunFalloff: 100,
+        sunSize: 0.05 + (rand.random()+rand.random()+rand.random())/3 * 0.5,
+        sunFalloff: 10,
         backgroundColor: [Math.pow(rand.random(),2)*32,Math.pow(rand.random(),2)*32,Math.pow(rand.random(),2)*32],
         renderFlipY: false
       },
@@ -180,7 +176,7 @@ module.exports = function(canvasOrContext = undefined) {
       sunParams.push({
         pos: params.sunPosition,
         color: [params.sunColor[0]/255, params.sunColor[1]/255, params.sunColor[2]/255],
-        size: rand.random() * 0.0001 + 0.0001,
+        size: params.sunSize * 0.001,
         falloff: params.sunFalloff
       });
     }
@@ -255,6 +251,9 @@ module.exports = function(canvasOrContext = undefined) {
           self.gl.viewport(0, 0, params.resolution, params.resolution);
         }
       }
+
+      // Alpha blending for regular content
+      self.gl.blendFuncSeparate(self.gl.SRC_ALPHA, self.gl.ONE_MINUS_SRC_ALPHA, self.gl.ZERO, self.gl.ONE);
       
       // Clear the context.
       var backgroundColor = params.backgroundColor;
@@ -316,6 +315,9 @@ module.exports = function(canvasOrContext = undefined) {
         self.pNebula.setUniform("uOffset", "3fv", p.offset);
         self.rNebula.render();
       }
+
+      // Additive blending
+      self.gl.blendFuncSeparate(self.gl.SRC_ALPHA, self.gl.ONE, self.gl.ZERO, self.gl.ONE);
 
       // Render the suns.
       self.pSun.use();

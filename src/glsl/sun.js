@@ -30,11 +30,10 @@ varying vec3 pos;
 
 void main() {
     vec3 posn = normalize(pos);
-    float d = clamp(dot(posn, normalize(uPosition)), 0.0, 1.0);
+    float d = clamp(dot(posn, normalize(uPosition))*5.0-4.0, 0.0, 1.0);
     float c = smoothstep(1.0 - uSize * 32.0, 1.0 - uSize, d);
-    c += pow(d, uFalloff) * 0.5;
-    vec3 color = mix(uColor, vec3(1,1,1), c);
+    c += pow(d, uFalloff) * 0.8;
+    vec3 color = uColor + c * 0.9;
     gl_FragColor = vec4(color, c);
-
 }
 `

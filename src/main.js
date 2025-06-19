@@ -67,7 +67,7 @@ window.onload = function() {
     this.pointStars = params.pointStars === undefined ? true : params.pointStars === "true";
     this.stars = params.stars === undefined ? true : params.stars === "true";
     this.sun = params.sun === undefined ? true : params.sun === "true";
-    this.sunFalloff = params.sunFalloff === undefined ? 100 : parseFloat(params.sunFalloff);
+    this.sunFalloff = params.sunFalloff === undefined ? 10 : parseFloat(params.sunFalloff);
     this.jpegQuality = params.jpegQuality === undefined ? 0.85 : parseFloat(params.jpegQuality);
     this.nebulae = params.nebulae === undefined ? true : params.nebulae === "true";
     this.nebulaOpacity = params.nebulaOpacity === undefined ? 33 : parseInt(params.nebulaOpacity);
@@ -196,7 +196,7 @@ window.onload = function() {
     .name("Color")
     .onChange(renderTextures);
   sunGui
-    .add(menu, "sunFalloff", 50, 250, 1)
+    .add(menu, "sunFalloff", 2, 30, 1)
     .name("Falloff")
     .onFinishChange(renderTextures);
 
